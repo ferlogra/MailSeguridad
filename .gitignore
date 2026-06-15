@@ -43,3 +43,4 @@ yt-dlp.exe
 *.py
 !manage.py
 !MailSeguridad/**/*.py
+/MailSeguridad/_test_hlink.py
