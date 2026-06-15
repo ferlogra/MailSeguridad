@@ -1,0 +1,45 @@
+# ── Python / Django ──────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# ── SQLite databases ──────────────────────────────
+*.db
+
+# ── IDE / Editor ──────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ────────────────────────────────────────────
+Thumbs.db
+.DS_Store
+
+# ── Config with secrets ───────────────────────────
+MailSeguridad/config/email.json
+
+# ── Temporary / generated ─────────────────────────
+*.tmp
+*.log
+*.xlsx
+nul/
+cookie*.txt
+cookiejar.txt
+yt-dlp.exe
+*.moinmoin
+
+# ── Scripts outside the project ───────────────────
+*.ps1
+!get-Mail.ps1
+*.py
+!manage.py
+!MailSeguridad/**/*.py

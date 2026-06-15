@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load seguridad_extras %}
+{% block title %}MailSeguridad — Mensaje #{{ mensaje.id }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Mensaje #{{ mensaje.id }}</h1>
+  <a href="{% url 'mensajes_list' %}" class="btn btn-secondary">← Volver a mensajes</a>
+</div>
+
+<form method="post" class="detail-form">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="save">
+
+  <div class="detail-id-bar">
+    <span class="detail-id-label">ID</span>
+    <span class="detail-id-value">{{ mensaje.id }}</span>
+  </div>
+
+  <div class="detail-grid">
+    {% for fld in editable_fields %}
+    <div class="detail-field">
+      <label for="id_{{ fld }}">{{ field_labels|dict_key:fld|default:fld }}</label>
+      {% if fld == 'num_mensajes' %}
+        <input type="number" id="id_{{ fld }}" name="{{ fld }}"
+               class="field" value="{{ mensaje|dict_key:fld|default:'' }}">
+      {% elif fld == 'message_ids' or fld == 'outlook_urls' %}
+        <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="4">{{ mensaje|dict_key:fld|default:'' }}</textarea>
+      {% elif fld == 'asunto_resumen' %}
+        <input type="text" id="id_{{ fld }}" name="{{ fld }}"
+               class="field" value="{{ mensaje|dict_key:fld|default:'' }}">
+      {% else %}
+        <input type="text" id="id_{{ fld }}" name="{{ fld }}"
+               class="field" value="{{ mensaje|dict_key:fld|default:'' }}">
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="detail-actions">
+    <button type="submit" class="btn btn-primary">💾 Guardar cambios</button>
+    <a href="{% url 'mensajes_list' %}" class="btn btn-secondary">Cancelar</a>
+    {% if is_admin %}
+      <button type="submit" class="btn btn-danger" style="margin-left:auto;"
+              form="delete-form">🗑️ Eliminar mensaje</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if is_admin %}
+<form id="delete-form" method="post" action="{% url 'mensaje_detail' pk=mensaje.id %}"
+      onsubmit="return confirm('¿Estás seguro de eliminar el mensaje #{{ mensaje.id }}? Esta acción no se puede deshacer.');">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="delete">
+</form>
+{% endif %}
+{% endblock %}

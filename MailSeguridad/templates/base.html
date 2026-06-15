@@ -1,0 +1,420 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>{% block title %}MailSeguridad{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'seguridad/app.css' %}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-mark">MS</div>
+        <div>
+          <div class="brand-name">MailSeguridad <span class="version-badge">v{{ app_version }}</span></div>
+          <div class="brand-tagline">Gestión de tickets de seguridad</div>
+        </div>
+      </div>
+      {% if user.is_authenticated %}
+        <nav class="topnav" aria-label="Principal">
+          <a href="{% url 'menu' %}">Menú</a>
+          <a href="{% url 'mensajes_list' %}">Mensajes</a>
+          <a class="nav-user" href="{% url 'profile' %}">{{ user.username }}</a>
+          {% if user.is_superuser or user.rol == 'administrador' %}
+            <a href="{% url 'email_config' %}">Email</a>
+          {% endif %}
+          <a class="nav-logout" href="{% url 'logout' %}">Salir</a>
+        </nav>
+      {% endif %}
+    </header>
+
+    {% if messages %}
+      <section class="messages" aria-live="polite">
+        {% for message in messages %}
+          <div class="message message-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <main class="page">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+      <span class="version-badge">v{{ app_version }}</span> &mdash; MailSeguridad
+    </footer>
+  </div>
+  <script>
+  // ── Multi-column sorting with Ctrl/Ctrl+Shift click ─────────
+  document.addEventListener('click', function(e) {
+    var target = e.target.closest('a.sort-header');
+    if (!target) return;
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      if (e.shiftKey && target.dataset.hrefCtrlShift) {
+        window.location.href = target.dataset.hrefCtrlShift;
+      } else if (target.dataset.hrefCtrl) {
+        window.location.href = target.dataset.hrefCtrl;
+      }
+    }
+  });
+
+  // ── Column visibility + drag-reorder + save/load ────────────
+  var COL_SELECTORS_INITED = false;
+
+  function initColSelectors() {
+    if (COL_SELECTORS_INITED) return;
+    COL_SELECTORS_INITED = true;
+
+    document.querySelectorAll('.col-selector').forEach(function(sel) {
+      var storageKey = sel.dataset.storageKey;
+      var menuOption = sel.dataset.menuOption;
+      var dropdown = sel.querySelector('.col-selector-dropdown');
+      if (!dropdown) return;
+
+      // ── Drag & drop reordering ──
+      var dragSrc = null;
+      dropdown.addEventListener('dragstart', function(e) {
+        var label = e.target.closest('label.drag-item');
+        if (!label) return;
+        dragSrc = label;
+        label.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+      });
+      dropdown.addEventListener('dragend', function(e) {
+        var label = e.target.closest('label.drag-item');
+        if (label) label.classList.remove('dragging');
+        dragSrc = null;
+      });
+      dropdown.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        var label = e.target.closest('label.drag-item');
+        if (!label || label === dragSrc) return;
+        var rect = label.getBoundingClientRect();
+        var mid = rect.top + rect.height / 2;
+        if (e.clientY < mid) {
+          label.parentNode.insertBefore(dragSrc, label);
+        } else {
+          label.parentNode.insertBefore(dragSrc, label.nextSibling);
+        }
+      });
+
+      // ── Toggle dropdown ──
+      var btn = sel.querySelector('.col-selector-btn');
+      if (btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+        });
+      }
+
+      // Close on outside click
+      document.addEventListener('click', function closeCol(e) {
+        if (!sel.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+      // ── Apply visibility ──
+      function applyCol(col, visible) {
+        var els = document.querySelectorAll('[data-col="' + col + '"]');
+        for (var i = 0; i < els.length; i++) {
+          els[i].classList.toggle('col-hidden', !visible);
+        }
+      }
+
+      // ── Load saved state from localStorage (backward compat) ──
+      var saved;
+      try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(e) { saved = {}; }
+
+      dropdown.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+        var col = cb.dataset.col;
+        if (saved[col] === false) {
+          cb.checked = false;
+          applyCol(col, false);
+        } else {
+          cb.checked = true;
+          applyCol(col, true);
+        }
+        cb.addEventListener('change', function() {
+          saved[col] = cb.checked;
+          try { localStorage.setItem(storageKey, JSON.stringify(saved)); } catch(e) {}
+          applyCol(col, cb.checked);
+        });
+      });
+
+      // ── Get order of visible fields ──
+      function getCurrentOrder() {
+        var order = [];
+        dropdown.querySelectorAll('label.drag-item input[type="checkbox"]').forEach(function(cb) {
+          order.push(cb.dataset.col);
+        });
+        return order;
+      }
+
+      function getCurrentSort() {
+        var sortEl = sel.closest('.section-head-inline').querySelector('.current-sort');
+        return sortEl ? sortEl.textContent : '';
+      }
+
+      // ── Get current visible column widths in pixels ──
+      function getCurrentSizes() {
+        var sizes = {};
+        var table = sel.closest('.section-head-inline')?.parentElement?.querySelector('.data-table');
+        if (!table) return sizes;
+        table.querySelectorAll('thead th[data-col]').forEach(function(th) {
+          if (!th.classList.contains('col-hidden')) {
+            sizes[th.dataset.col] = th.offsetWidth;
+          }
+        });
+        return sizes;
+      }
+
+      // ── Save button ──
+      var saveBtn = dropdown.querySelector('.col-save-btn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+          var name = prompt('Nombre para esta configuración:');
+          if (!name || !name.trim()) return;
+          name = name.trim();
+          var selected = [];
+          dropdown.querySelectorAll('label.drag-item input[type="checkbox"]').forEach(function(cb) {
+            if (cb.checked) selected.push(cb.dataset.col);
+          });
+          var order = getCurrentOrder();
+          var currentSort = getCurrentSort();
+          var currentSizes = getCurrentSizes();
+          fetch('{% url "table_config_save" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRF()},
+            body: JSON.stringify({
+              menu_option: menuOption,
+              name: name,
+              selected_fields: selected,
+              sort_order: currentSort || null,
+              size_columns: currentSizes,
+            })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.status === 'ok') {
+              loadConfigList(sel, menuOption, order);
+            }
+          });
+        });
+      }
+
+      // ── Load config list into <select> ──
+      function loadConfigList(sel, menuOption, currentOrder) {
+        fetch('{% url "table_config_list" %}?menu_option=' + encodeURIComponent(menuOption))
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var select = sel.querySelector('.col-config-select');
+            if (!select) return;
+            while (select.options.length > 1) select.remove(1);
+            var delBtn = sel.querySelector('.col-config-del-btn');
+            if (delBtn) delBtn.style.display = 'none';
+
+            if (!data.configs || data.configs.length === 0) return;
+
+            var defaultApplied = false;
+            var savedDefaultCfg = null;
+            data.configs.forEach(function(cfg) {
+              var opt = document.createElement('option');
+              opt.value = cfg.id;
+              opt.textContent = cfg.name;
+              opt._cfg = cfg;
+              select.appendChild(opt);
+
+              if (cfg.name === 'default') {
+                savedDefaultCfg = cfg;
+                if (!defaultApplied) {
+                  defaultApplied = true;
+                  if (!window.location.href.match(/[?&]sort=/)) {
+                    setTimeout(function() { applyConfig(sel, cfg); }, 50);
+                  }
+                }
+              }
+            });
+            setTimeout(function() { restoreColumnSizes(savedDefaultCfg); }, 100);
+          });
+      }
+
+      // ── Config select change → auto-apply ──
+      var configSelect = dropdown.querySelector('.col-config-select');
+      if (configSelect) {
+        configSelect.addEventListener('change', function() {
+          var opt = configSelect.options[configSelect.selectedIndex];
+          var cfg = opt._cfg;
+          var delBtn = sel.querySelector('.col-config-del-btn');
+          if (cfg) {
+            applyConfig(sel, cfg);
+            if (delBtn) delBtn.style.display = '';
+          } else {
+            if (delBtn) delBtn.style.display = 'none';
+          }
+        });
+      }
+
+      // ── Delete button ──
+      var delBtn = sel.querySelector('.col-config-del-btn');
+      if (delBtn) {
+        delBtn.addEventListener('click', function() {
+          var select = sel.querySelector('.col-config-select');
+          var opt = select.options[select.selectedIndex];
+          var cfg = opt && opt._cfg;
+          if (!cfg) return;
+          if (!confirm('¿Eliminar la configuración "' + cfg.name + '"?')) return;
+          fetch('{% url "table_config_delete" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRF()},
+            body: JSON.stringify({id: cfg.id})
+          })
+          .then(function() {
+            loadConfigList(sel, menuOption, getCurrentOrder());
+            configSelect.value = '';
+            if (delBtn) delBtn.style.display = 'none';
+          });
+        });
+      }
+
+      // ── Apply a saved config ──
+      function applyConfig(sel, cfg) {
+        if (cfg.selected_fields && cfg.selected_fields.length > 0) {
+          var items = dropdown.querySelectorAll('label.drag-item');
+          var itemMap = {};
+          items.forEach(function(item) {
+            var cb = item.querySelector('input[type="checkbox"]');
+            itemMap[cb.dataset.col] = item;
+          });
+          cfg.selected_fields.forEach(function(col) {
+            if (itemMap[col]) {
+              dropdown.appendChild(itemMap[col]);
+            }
+          });
+          cfg.selected_fields.forEach(function(col) {
+            var cb = dropdown.querySelector('input[data-col="' + col + '"]');
+            if (cb) { cb.checked = true; applyCol(col, true); }
+          });
+          dropdown.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+            if (cfg.selected_fields.indexOf(cb.dataset.col) === -1) {
+              cb.checked = false;
+              applyCol(cb.dataset.col, false);
+            }
+          });
+        }
+        if (cfg.size_columns) {
+          applyColumnSizes(cfg.size_columns);
+        }
+        if (cfg.sort_order) {
+          if (cfg.size_columns) {
+            try { sessionStorage.setItem('mailseg_restore_sizes_' + menuOption, JSON.stringify(cfg.size_columns)); } catch(e) {}
+          }
+          var url = new URL(window.location.href);
+          url.searchParams.set('sort', cfg.sort_order);
+          window.location.href = url.toString();
+        }
+        dropdown.classList.remove('open');
+      }
+
+      // ── Apply column widths to all tables on the page ──
+      function applyColumnSizes(sizes) {
+        Object.keys(sizes).forEach(function(col) {
+          var width = sizes[col];
+          document.querySelectorAll('.data-table th[data-col="' + col + '"]').forEach(function(th) {
+            th.style.width = width + 'px';
+            th.style.minWidth = width + 'px';
+          });
+          document.querySelectorAll('.data-table td[data-col="' + col + '"]').forEach(function(td) {
+            td.style.width = width + 'px';
+            td.style.minWidth = width + 'px';
+          });
+        });
+      }
+
+      // ── Restore column sizes from sessionStorage or default config ──
+      function restoreColumnSizes(savedDefaultCfg) {
+        var restoreKey = 'mailseg_restore_sizes_' + menuOption;
+        var raw;
+        try { raw = sessionStorage.getItem(restoreKey); } catch(e) { raw = null; }
+        if (raw) {
+          try { sessionStorage.removeItem(restoreKey); } catch(e) {}
+          var sizes = JSON.parse(raw);
+          if (sizes && Object.keys(sizes).length > 0) {
+            applyColumnSizes(sizes);
+            return;
+          }
+        }
+        if (savedDefaultCfg && savedDefaultCfg.size_columns) {
+          var sizes = savedDefaultCfg.size_columns;
+          if (Object.keys(sizes).length > 0) {
+            applyColumnSizes(sizes);
+          }
+        }
+      }
+
+      // ── Load configs on init ──
+      setTimeout(function() { loadConfigList(sel, menuOption, getCurrentOrder()); }, 100);
+    });
+  }
+
+  function getCSRF() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  // ── Column resize via draggable handles ──────────────────────
+  function initColResize() {
+    document.querySelectorAll('.data-table th').forEach(function(th) {
+      if (th.querySelector('.resize-handle')) return;
+
+      var handle = document.createElement('div');
+      handle.className = 'resize-handle';
+      th.appendChild(handle);
+
+      handle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var startX = e.clientX;
+        var startWidth = th.offsetWidth;
+        handle.classList.add('resizing');
+
+        function onMouseMove(e) {
+          var newWidth = Math.max(30, startWidth + (e.clientX - startX));
+          th.style.width = newWidth + 'px';
+          th.style.minWidth = newWidth + 'px';
+        }
+
+        function onMouseUp() {
+          handle.classList.remove('resizing');
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+    });
+  }
+
+  // Init on DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      initColSelectors();
+      initColResize();
+    });
+  } else {
+    initColSelectors();
+    initColResize();
+  }
+  </script>
+</body>
+</html>

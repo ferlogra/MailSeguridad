@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}MailSeguridad — Menú{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Panel principal</h1>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ total_mensajes }}</div>
+    <div class="stat-label">Total mensajes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ familias|length }}</div>
+    <div class="stat-label">Familias</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ revisiones|length }}</div>
+    <div class="stat-label">Revisiones</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Explorar</h2>
+  <ul class="dashboard-list">
+    <li>
+      <a href="{% url 'mensajes_list' %}">
+        <span>📧 Mensajes de tickets</span>
+        <span class="count">{{ total_mensajes }}</span>
+      </a>
+    </li>
+  </ul>
+</div>
+
+{% if familias %}
+<div class="card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Distribución por familia</h2>
+  <ul class="dashboard-list">
+    {% for f in familias %}
+    <li>
+      <a href="{% url 'mensajes_list' %}?q={{ f.familia|urlencode }}">
+        <span>{{ f.familia|default:"Sin familia" }}</span>
+        <span class="count">{{ f.total }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if revisiones %}
+<div class="card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Distribución por revisión</h2>
+  <ul class="dashboard-list">
+    {% for r in revisiones %}
+    <li>
+      <a href="{% url 'mensajes_list' %}?q={{ r.revision|urlencode }}">
+        <span>{{ r.revision|default:"Sin revisión" }}</span>
+        <span class="count">{{ r.total }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if is_admin %}
+<div class="card" style="border-color: var(--color-error);">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;color:var(--color-error);">Administración</h2>
+  <form method="post" action="{% url 'clear_mensajes' %}" onsubmit="return confirm('¿Estás seguro de borrar TODOS los mensajes? Esta acción no se puede deshacer.');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">🗑️ Borrar todos los mensajes</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

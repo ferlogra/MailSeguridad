@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}MailSeguridad — Iniciar sesión{% endblock %}
+{% block content %}
+<div class="form-card">
+  <h1>Iniciar sesión</h1>
+  <form method="post" action="{% url 'accounts_login' %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="id_username">Usuario</label>
+      <input type="text" name="username" id="id_username" class="field" autocomplete="username" required>
+    </div>
+    <div class="form-group">
+      <label for="id_password">Contraseña</label>
+      <input type="password" name="password" id="id_password" class="field" autocomplete="current-password" required>
+    </div>
+    {% if form.errors %}
+      <ul class="errorlist"><li>Usuario o contraseña incorrectos.</li></ul>
+    {% endif %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" style="flex:1;">Entrar</button>
+    </div>
+    <div class="login-actions">
+      <a href="{% url 'password_reset_request' %}">¿Olvidaste tu contraseña?</a>
+      <a href="{% url 'signup' %}">Registrarse</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

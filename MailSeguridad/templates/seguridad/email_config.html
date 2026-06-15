@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}MailSeguridad — Configuración de email{% endblock %}
+{% block content %}
+<div class="form-card" style="max-width:640px;">
+  <h1>Configuración SMTP</h1>
+
+  {% if test_ok %}
+    <div class="message message-success">Correo de prueba enviado correctamente.</div>
+  {% endif %}
+  {% if test_error_detail %}
+    <div class="message message-error">{{ test_error_detail }}</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+        {% if field.errors %}<ul class="errorlist">{{ field.errors }}</ul>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      {% if settings.is_testable %}
+        <button type="submit" name="test_email" value="1" class="btn btn-secondary">Enviar prueba</button>
+      {% endif %}
+      <a href="{% url 'menu' %}" class="btn btn-secondary">Volver</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
