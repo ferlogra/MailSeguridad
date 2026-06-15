@@ -602,6 +602,34 @@ def tipoactuaciones_list_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def tipoactuacion_create_view(request: HttpRequest) -> HttpResponse:
+    """Create a new TipoActuacion record."""
+    if request.method == "POST":
+        obj = TipoActuacion(
+            grupo=int(request.POST.get("grupo", 0)),
+            orden=int(request.POST.get("orden", 0)),
+            breve=request.POST.get("breve", "").strip(),
+            amplio=request.POST.get("amplio", "").strip(),
+            cierra=request.POST.get("cierra") == "on",
+        )
+        obj.save()
+        messages.success(request, f"Tipo de actuación {obj.pk} creado.")
+        return redirect("tipoactuacion_detail", pk=obj.pk)
+    from .table_manager import tables as _t
+    cfg = _t.get("tipoactuaciones_list")
+    field_labels = dict(cfg.columns) if cfg else {}
+    obj = TipoActuacion(grupo=0, orden=0, breve="", amplio="", cierra=False)
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    return render(request, "seguridad/tipoactuacion_detail.html", {
+        "obj": obj,
+        "field_labels": field_labels,
+        "is_admin": is_admin,
+        "is_new": True,
+    })
+
+
+@login_required
 def tipoactuacion_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
     """View/edit a single TipoActuacion record."""
     obj = get_object_or_404(TipoActuacion, pk=pk)
@@ -664,6 +692,48 @@ def actuaciones_list_view(request: HttpRequest) -> HttpResponse:
         "page_obj": page_obj,
         "is_paginated": is_paginated,
         **table_ctx,
+    })
+
+
+@login_required
+def actuacion_create_view(request: HttpRequest) -> HttpResponse:
+    """Create a new Actuacion record."""
+    if request.method == "POST":
+        tipo_pk = request.POST.get("id_tipo_actuacion", "").strip()
+        id_tipo = get_object_or_404(TipoActuacion, pk=int(tipo_pk)) if tipo_pk else None
+        from django.utils import timezone as tz
+        fecha_str = request.POST.get("fecha_hora", "").strip()
+        if fecha_str:
+            from datetime import datetime
+            try:
+                fecha = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                fecha = tz.now()
+        else:
+            fecha = tz.now()
+        obj = Actuacion(
+            id_tipo_actuacion=id_tipo,
+            id_user=request.user,
+            fecha_hora=fecha,
+            breve=request.POST.get("breve", "").strip(),
+            amplio=request.POST.get("amplio", "").strip(),
+            cierra=request.POST.get("cierra") == "on",
+        )
+        obj.save()
+        messages.success(request, f"Actuación {obj.pk} creada.")
+        return redirect("actuacion_detail", pk=obj.pk)
+    from .table_manager import tables as _t
+    cfg = _t.get("actuaciones_list")
+    field_labels = dict(cfg.columns) if cfg else {}
+    tipos = TipoActuacion.objects.all().order_by("grupo", "orden")
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    return render(request, "seguridad/actuacion_detail.html", {
+        "obj": None,
+        "field_labels": field_labels,
+        "tipos": tipos,
+        "is_admin": is_admin,
+        "is_new": True,
     })
 
 

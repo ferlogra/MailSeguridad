@@ -6,6 +6,7 @@
   <h1>Actuaciones</h1>
   <div style="display:flex;gap:0.5rem;align-items:center;">
     <span style="font-size:0.85rem;color:var(--color-text-dim);">{{ page_obj.paginator.count|default:records|length }} registros</span>
+    <a href="{% url 'actuacion_create' %}" class="btn btn-primary" style="font-size:0.85rem;">+ Nueva actuación</a>
   </div>
 </div>
 

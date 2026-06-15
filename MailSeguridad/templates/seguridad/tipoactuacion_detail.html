@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load seguridad_extras %}
-{% block title %}MailSeguridad — Tipo actuación #{{ obj.id_tipo_actuacion }}{% endblock %}
+{% block title %}MailSeguridad — Tipo actuación{% if obj.id_tipo_actuacion %} #{{ obj.id_tipo_actuacion }}{% endif %}{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1>Tipo de actuación #{{ obj.id_tipo_actuacion }}</h1>
+  <h1>{% if is_new %}Nuevo tipo de actuación{% else %}Tipo de actuación #{{ obj.id_tipo_actuacion }}{% endif %}</h1>
   <a href="{% url 'tipoactuaciones_list' %}" class="btn btn-secondary">← Volver</a>
 </div>
 
@@ -11,10 +11,12 @@
   {% csrf_token %}
   <input type="hidden" name="_method" value="save">
 
+  {% if not is_new %}
   <div class="detail-id-bar">
     <span class="detail-id-label">ID</span>
     <span class="detail-id-value">{{ obj.id_tipo_actuacion }}</span>
   </div>
+  {% endif %}
 
   <div class="detail-grid">
     <div class="detail-field">
@@ -42,16 +44,16 @@
   </div>
 
   <div class="detail-actions">
-    <button type="submit" class="btn btn-primary">💾 Guardar cambios</button>
+    <button type="submit" class="btn btn-primary">{% if is_new %}➕ Crear{% else %}💾 Guardar cambios{% endif %}</button>
     <a href="{% url 'tipoactuaciones_list' %}" class="btn btn-secondary">Cancelar</a>
-    {% if is_admin %}
+    {% if is_admin and not is_new %}
       <button type="submit" class="btn btn-danger" style="margin-left:auto;"
               form="delete-form">🗑️ Eliminar</button>
     {% endif %}
   </div>
 </form>
 
-{% if is_admin %}
+{% if is_admin and not is_new %}
 <form id="delete-form" method="post" action="{% url 'tipoactuacion_detail' pk=obj.id_tipo_actuacion %}"
       onsubmit="return confirm('¿Estás seguro de eliminar el tipo de actuación #{{ obj.id_tipo_actuacion }}?');">
   {% csrf_token %}
