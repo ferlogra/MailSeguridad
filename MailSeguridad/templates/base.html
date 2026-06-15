@@ -415,6 +415,152 @@
     initColSelectors();
     initColResize();
   }
+
+  // ── Actuaciones modal ──────────────────────────
+  (function() {
+    var modal = document.getElementById('act-modal');
+    if (!modal) return;
+    var closeBtn = document.getElementById('act-modal-close');
+    var tbody = document.getElementById('act-tbody');
+    var loading = document.getElementById('act-loading');
+    var empty = document.getElementById('act-empty');
+    var table = document.getElementById('act-table');
+    var msg = document.getElementById('act-msg');
+    var selectAll = document.getElementById('act-select-all');
+    var deleteBtn = document.getElementById('act-btn-delete');
+    var nuevaBtn = document.getElementById('act-btn-nueva');
+    var mensajeLabel = document.getElementById('act-modal-mensaje-label');
+    var currentMensajeId = null;
+
+    function closeModal() { modal.style.display = 'none'; currentMensajeId = null; }
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
+
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.btn-act');
+      if (!btn) return;
+      currentMensajeId = btn.dataset.mensajeId;
+      mensajeLabel.textContent = btn.dataset.mensajeLabel || '#' + currentMensajeId;
+      loadActuaciones(currentMensajeId);
+      modal.style.display = 'flex';
+    });
+
+    function loadActuaciones(mensajeId) {
+      loading.style.display = 'block';
+      empty.style.display = 'none';
+      table.style.display = 'none';
+      tbody.innerHTML = '';
+      msg.textContent = '';
+      fetch('/actuaciones/api/por-mensaje/' + mensajeId + '/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          loading.style.display = 'none';
+          var list = data.actuaciones || [];
+          if (list.length === 0) { empty.style.display = 'block'; return; }
+          table.style.display = '';
+          list.forEach(function(a) {
+            var tr = document.createElement('tr');
+            var d = a.fecha_hora ? new Date(a.fecha_hora).toLocaleString('es') : '';
+            tr.innerHTML = '<td><input type="checkbox" class="act-chk" data-id="' + a.id_actuacion + '"></td>' +
+              '<td>' + (a.tipo_breve || '—') + '</td>' +
+              '<td>' + d + '</td>' +
+              '<td>' + (a.breve || '') + '</td>' +
+              '<td>' + (a.cierra ? '\u2705' : '\u274C') + '</td>';
+            tbody.appendChild(tr);
+          });
+          updateDeleteBtn();
+        })
+        .catch(function(err) { loading.style.display = 'none'; msg.textContent = 'Error: ' + err; });
+    }
+
+    selectAll.addEventListener('change', function() {
+      document.querySelectorAll('.act-chk').forEach(function(cb) { cb.checked = selectAll.checked; });
+      updateDeleteBtn();
+    });
+
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('act-chk')) updateDeleteBtn();
+    });
+
+    function getSelectedIds() {
+      return Array.from(document.querySelectorAll('.act-chk:checked')).map(function(cb) { return parseInt(cb.dataset.id); });
+    }
+    function updateDeleteBtn() { deleteBtn.disabled = getSelectedIds().length === 0; }
+
+    function getCsrf() {
+      var el = document.querySelector('[name=csrfmiddlewaretoken]');
+      return el ? el.value : '';
+    }
+
+    deleteBtn.addEventListener('click', function() {
+      var ids = getSelectedIds();
+      if (ids.length === 0) return;
+      if (!confirm('\u00BFEliminar ' + ids.length + ' actuaci\u00F3n(es)?')) return;
+      msg.textContent = 'Eliminando...';
+      var done = 0;
+      ids.forEach(function(id) {
+        fetch('/actuaciones/api/' + id + '/eliminar/', { method: 'POST', headers: {'X-CSRFToken': getCsrf()} })
+          .then(function(r) { return r.json(); })
+          .then(function() {
+            done++;
+            if (done === ids.length) {
+              msg.textContent = 'Eliminadas ' + done + ' actuaci\u00F3n(es).';
+              loadActuaciones(currentMensajeId);
+            }
+          })
+          .catch(function(err) { msg.textContent = 'Error: ' + err; });
+      });
+    });
+
+    nuevaBtn.addEventListener('click', function() {
+      var oldForm = document.querySelector('.act-new-form');
+      if (oldForm) { oldForm.remove(); return; }
+      fetch('/tipoactuaciones/api/lista/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var tipos = data.tipos || [];
+          var form = document.createElement('div');
+          form.className = 'act-new-form';
+          form.innerHTML =
+            '<div class="field-full"><label>Tipo</label><select id="act-new-tipo" class="field">' +
+            '<option value="">\u2014 Seleccionar \u2014</option>' +
+            tipos.map(function(t) { return '<option value="' + t.id + '">[' + t.grupo + '.' + t.orden + '] ' + t.breve + '</option>'; }).join('') +
+            '</select></div>' +
+            '<div class="field-full"><label>Breve</label><textarea id="act-new-breve" class="field" rows="2" maxlength="256"></textarea></div>' +
+            '<div class="field-full"><label>Amplio</label><textarea id="act-new-amplio" class="field" rows="3" maxlength="8192"></textarea></div>' +
+            '<div><label><input type="checkbox" id="act-new-cierra"> Cierra el mensaje</label></div>' +
+            '<div style="text-align:right;"><button class="btn btn-primary" id="act-new-save">\uD83D\uDCBE Guardar</button></div>';
+          document.querySelector('.modal-body').appendChild(form);
+          document.getElementById('act-new-save').addEventListener('click', function() {
+            var tipo = document.getElementById('act-new-tipo').value;
+            if (!tipo) { msg.textContent = 'Selecciona un tipo.'; return; }
+            var breve = document.getElementById('act-new-breve').value.trim();
+            if (!breve) { msg.textContent = 'Breve es obligatorio.'; return; }
+            msg.textContent = 'Guardando...';
+            fetch('/actuaciones/api/crear/', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+              body: JSON.stringify({
+                id_tipo_actuacion: parseInt(tipo),
+                id_mensaje: currentMensajeId,
+                breve: breve,
+                amplio: document.getElementById('act-new-amplio').value.trim(),
+                cierra: document.getElementById('act-new-cierra').checked
+              })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+              msg.textContent = 'Creada.';
+              form.remove();
+              loadActuaciones(currentMensajeId);
+            })
+            .catch(function(err) { msg.textContent = 'Error: ' + err; });
+          });
+        })
+        .catch(function(err) { msg.textContent = 'Error al cargar tipos: ' + err; });
+    });
+  })();
   </script>
 </body>
 </html>

@@ -177,6 +177,13 @@ class Actuacion(models.Model):
         max_length=8192, blank=True, default="", db_column="Amplio", verbose_name="Amplio"
     )
     cierra = models.BooleanField(default=False, db_column="Cierra", verbose_name="Cierra")
+    id_mensaje = models.ForeignKey(
+        Mensaje,
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        db_column="IdMensaje",
+        verbose_name="Mensaje",
+    )
 
     class Meta:
         managed = True

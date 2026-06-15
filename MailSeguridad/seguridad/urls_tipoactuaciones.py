@@ -9,4 +9,5 @@ urlpatterns = [
     path("", views.tipoactuaciones_list_view, name="tipoactuaciones_list"),
     path("nuevo/", views.tipoactuacion_create_view, name="tipoactuacion_create"),
     path("<int:pk>/", views.tipoactuacion_detail_view, name="tipoactuacion_detail"),
+    path("api/lista/", views.tipoactuaciones_lista_api, name="tipoactuaciones_lista_api"),
 ]

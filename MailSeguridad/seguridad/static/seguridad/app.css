@@ -594,3 +594,57 @@ label.dragging { opacity: 0.4; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .form-card { padding: 1.25rem; }
 }
+
+/* ── Actuaciones modal ────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  width: min(90vw, 800px);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1rem 3rem rgba(0,0,0,0.4);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.modal-header h2 { margin: 0; font-size: 1rem; }
+.modal-close {
+  background: none; border: none;
+  color: var(--color-text-dim); font-size: 1.25rem;
+  cursor: pointer; padding: 0.25rem;
+}
+.modal-close:hover { color: var(--color-text); }
+.modal-body { padding: 1rem 1.25rem; overflow-y: auto; flex: 1; }
+.modal-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+  display: flex; align-items: center;
+}
+.act-table th { font-size: 0.75rem; }
+.act-table td { font-size: 0.8rem; }
+.act-loading, .act-empty {
+  text-align: center; padding: 2rem;
+  color: var(--color-text-dim);
+}
+.act-new-form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  padding: 1rem 0; border-top: 1px solid var(--color-border);
+  margin-top: 0.75rem;
+}
+.act-new-form .field-full { grid-column: 1 / -1; }
+.act-new-form label { font-size: 0.8rem; color: var(--color-text-dim); }

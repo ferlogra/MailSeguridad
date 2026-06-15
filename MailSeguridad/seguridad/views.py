@@ -737,6 +737,71 @@ def actuacion_create_view(request: HttpRequest) -> HttpResponse:
     })
 
 
+# ── Actuaciones API ──────────────────────────────────────────────
+
+
+@login_required
+def actuaciones_por_mensaje_api(request: HttpRequest, mensaje_id: int) -> JsonResponse:
+    """Return JSON list of actuaciones for a mensaje."""
+    qs = Actuacion.objects.filter(id_mensaje_id=mensaje_id).select_related("id_tipo_actuacion", "id_user").order_by("-fecha_hora")
+    data = [
+        {
+            "id_actuacion": a.id_actuacion,
+            "tipo_breve": a.id_tipo_actuacion.breve if a.id_tipo_actuacion else "",
+            "fecha_hora": a.fecha_hora.isoformat() if a.fecha_hora else None,
+            "breve": a.breve,
+            "amplio": a.amplio,
+            "cierra": a.cierra,
+            "username": a.id_user.username if a.id_user else "",
+        }
+        for a in qs
+    ]
+    return JsonResponse({"actuaciones": data})
+
+
+@login_required
+@require_http_methods(["POST"])
+def actuacion_create_api(request: HttpRequest) -> JsonResponse:
+    """Create an actuacion via JSON API."""
+    from django.utils import timezone as tz
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    tipo_pk = body.get("id_tipo_actuacion")
+    if not tipo_pk:
+        return JsonResponse({"error": "id_tipo_actuacion required"}, status=400)
+    tipo = get_object_or_404(TipoActuacion, pk=tipo_pk)
+    obj = Actuacion(
+        id_tipo_actuacion=tipo,
+        id_user=request.user,
+        fecha_hora=tz.now(),
+        breve=body.get("breve", "").strip(),
+        amplio=body.get("amplio", "").strip(),
+        cierra=body.get("cierra", False),
+        id_mensaje_id=body.get("id_mensaje"),
+    )
+    obj.save()
+    return JsonResponse({"status": "ok", "id": obj.pk})
+
+
+@login_required
+@require_http_methods(["POST"])
+def actuacion_delete_api(request: HttpRequest, pk: int) -> JsonResponse:
+    """Delete an actuacion."""
+    obj = get_object_or_404(Actuacion, pk=pk)
+    obj.delete()
+    return JsonResponse({"status": "ok"})
+
+
+@login_required
+def tipoactuaciones_lista_api(request: HttpRequest) -> JsonResponse:
+    """Return JSON list of all TipoActuaciones for dropdowns."""
+    tipos = TipoActuacion.objects.all().order_by("grupo", "orden")
+    data = [{"id": t.id_tipo_actuacion, "grupo": t.grupo, "orden": t.orden, "breve": t.breve} for t in tipos]
+    return JsonResponse({"tipos": data})
+
+
 @login_required
 def actuacion_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
     """View/edit a single Actuacion record."""
