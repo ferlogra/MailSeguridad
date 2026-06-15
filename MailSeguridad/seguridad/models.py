@@ -115,6 +115,7 @@ class Mensaje(models.Model):
     message_ids = models.TextField(null=True, blank=True, db_column="MessageIds")
     outlook_urls = models.TextField(null=True, blank=True, db_column="OutlookUrls")
     revision = models.TextField(null=True, blank=True, db_column="Revision")
+    id_actuacion = models.IntegerField(default=0, db_column="IdActuacion")
 
     class Meta:
         managed = False

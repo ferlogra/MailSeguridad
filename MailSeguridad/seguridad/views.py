@@ -516,6 +516,9 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         num_val = request.POST.get("num_mensajes", "").strip()
         mensaje.num_mensajes = int(num_val) if num_val else None
 
+        act_val = request.POST.get("id_actuacion", "").strip()
+        mensaje.id_actuacion = int(act_val) if act_val else 0
+
         mensaje.save()
         messages.success(request, f"Mensaje {pk} actualizado correctamente.")
         return redirect("mensaje_detail", pk=pk)
@@ -532,7 +535,7 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
         "crq_asociado", "ventana_o_fecha", "ultimo_email",
         "remitente_ultimo", "num_mensajes", "message_ids", "outlook_urls",
-        "revision",
+        "revision", "id_actuacion",
     ]
     user = cast(Any, request).user
     is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR

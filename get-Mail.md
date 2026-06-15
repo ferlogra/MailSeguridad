@@ -1,6 +1,6 @@
 # get-Mail.ps1
 
-**Versión actual:** 1.6  
+**Versión actual:** 1.7  
 **Última actualización:** 2026-06-16  
 **Requiere:** PowerShell 5.1+
 
@@ -113,6 +113,7 @@ Si la BBDD no existe, se crea junto con la tabla. Si ya existe, los nuevos regis
 | `MessageIds` | Lista de IDs de mensaje del hilo |
 | `OutlookUrls` | Lista de URLs a los mensajes en Outlook |
 | `Revision` (v1.5+) | Timestamp de la ejecución (formato `AAAAMMDD-HHmmss`) |
+| `IdActuacion` (v1.7+) | ID de actuación (entero, editable desde la web, por defecto 0) |
 
 ---
 
@@ -191,6 +192,15 @@ Los filtros están definidos en el array `$Filters` dentro del script. Cada filt
 ---
 
 ## Changelog
+
+### v1.7 (2026-06-16)
+**Aportaciones:**
+
+#### Nuevos campos
+- ✨ Nuevo campo `IdActuacion` (INTEGER NOT NULL DEFAULT 0) en la tabla `Mensajes` de SQLite. Añadido al CREATE TABLE, al INSERT y mediante ALTER TABLE a bases de datos existentes.
+- ✨ El campo `IdActuacion` se muestra y edita desde la web app MailSeguridad v1.1.0 (columna en tabla + campo editable en detalle).
+
+---
 
 ### v1.6 (2026-06-16)
 **Aportaciones:**

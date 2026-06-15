@@ -198,6 +198,7 @@ MENSAJES_ALL_COLS: dict[str, str] = {
     "message_ids": "Message IDs",
     "outlook_urls": "URLs Outlook",
     "revision": "Revisión",
+    "id_actuacion": "Id. Actuación",
 }
 
 
@@ -210,6 +211,7 @@ tables.register(TableView(
     sort_fields=[
         "id", "familia", "id_principal", "grupo", "estado",
         "accion_tipo", "num_mensajes", "ultimo_email", "revision",
+        "id_actuacion",
     ],
     sort_labels={
         "id": "ID", "familia": "Familia", "id_principal": "ID principal",
@@ -218,11 +220,12 @@ tables.register(TableView(
         "num_mensajes": "Nº mensajes",
         "ultimo_email": "Último email",
         "revision": "Revisión",
+        "id_actuacion": "Id. Actuación",
     },
     default_cols=[
         "id", "familia", "id_principal", "grupo", "asunto_resumen",
         "estado", "accion_tipo", "num_mensajes", "ultimo_email",
-        "remitente_ultimo", "revision",
+        "remitente_ultimo", "revision", "id_actuacion",
     ],
     paginate_by=50,
     row_action_url_name="mensaje_detail",

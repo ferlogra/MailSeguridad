@@ -165,7 +165,7 @@ begin {
 #     [datetime]$fechaInicio
 # )
 
-    $version= "1.6"
+    $version= "1.7"
 
     function Write-Log {
         param(
@@ -1059,7 +1059,8 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     Num_Mensajes      INTEGER,
     MessageIds        TEXT,
     OutlookUrls       TEXT,
-    Revision          TEXT
+    Revision          TEXT,
+    IdActuacion       INTEGER NOT NULL DEFAULT 0
 )
 "@
         Invoke-SqliteQuery -DataSource $DatabasePath -Query $createTable
@@ -1070,12 +1071,12 @@ INSERT INTO Mensajes (
     Familia, ID_principal, Grupo, Filtro, Asunto_resumen, Estado,
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
-    Num_Mensajes, MessageIds, OutlookUrls, Revision
+    Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
     @Ventana_o_fecha, @Ultimo_email_2026, @Remitente_ultimo,
-    @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision
+    @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion
 )
 "@
 
@@ -1099,6 +1100,7 @@ INSERT INTO Mensajes (
                 MessageIds      = if ($row.MessageIds)      { [string]$row.MessageIds }      else { '' }
                 OutlookUrls     = if ($row.OutlookUrls)     { [string]$row.OutlookUrls }     else { '' }
                 Revision        = $revisionTimestamp
+                IdActuacion     = 0
             }
             $count++
         }
