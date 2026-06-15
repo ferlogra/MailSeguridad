@@ -202,6 +202,32 @@ MENSAJES_ALL_COLS: dict[str, str] = {
 }
 
 
+# ── TipoActuaciones columns ──────────────────────
+
+
+TIPO_ACTUACIONES_ALL_COLS: dict[str, str] = {
+    "id_tipo_actuacion": "ID",
+    "grupo": "Grupo",
+    "orden": "Orden",
+    "breve": "Breve",
+    "amplio": "Amplio",
+    "cierra": "Cierra",
+}
+
+# ── Actuaciones columns ──────────────────────────
+
+
+ACTUACIONES_ALL_COLS: dict[str, str] = {
+    "id_actuacion": "ID",
+    "id_tipo_actuacion": "Tipo actuación",
+    "id_user": "Usuario",
+    "fecha_hora": "Fecha/Hora",
+    "breve": "Breve",
+    "amplio": "Amplio",
+    "cierra": "Cierra",
+}
+
+
 # ── Register tables ─────────────────────────────────────────────
 
 
@@ -229,6 +255,38 @@ tables.register(TableView(
     ],
     paginate_by=50,
     row_action_url_name="mensaje_detail",
+))
+
+tables.register(TableView(
+    menu_option="tipoactuaciones_list",
+    columns=TIPO_ACTUACIONES_ALL_COLS,
+    sort_fields=["id_tipo_actuacion", "grupo", "orden", "breve", "cierra"],
+    sort_labels={
+        "id_tipo_actuacion": "ID",
+        "grupo": "Grupo",
+        "orden": "Orden",
+        "breve": "Breve",
+        "cierra": "Cierra",
+    },
+    default_cols=["id_tipo_actuacion", "grupo", "orden", "breve", "amplio", "cierra"],
+    paginate_by=50,
+    row_action_url_name="tipoactuacion_detail",
+))
+
+tables.register(TableView(
+    menu_option="actuaciones_list",
+    columns=ACTUACIONES_ALL_COLS,
+    sort_fields=["id_actuacion", "fecha_hora", "id_tipo_actuacion", "breve", "cierra"],
+    sort_labels={
+        "id_actuacion": "ID",
+        "fecha_hora": "Fecha/Hora",
+        "id_tipo_actuacion": "Tipo",
+        "breve": "Breve",
+        "cierra": "Cierra",
+    },
+    default_cols=["id_actuacion", "fecha_hora", "id_tipo_actuacion", "breve", "amplio", "cierra"],
+    paginate_by=50,
+    row_action_url_name="actuacion_detail",
 ))
 
 

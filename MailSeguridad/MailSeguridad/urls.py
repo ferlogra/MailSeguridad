@@ -20,6 +20,8 @@ urlpatterns = [
     path("email-config/", views.email_config_view, name="email_config"),
     path("usuario/", include("seguridad.user_urls")),
     path("mensajes/", include("seguridad.urls")),
+    path("tipoactuaciones/", include("seguridad.urls_tipoactuaciones")),
+    path("actuaciones/", include("seguridad.urls_actuaciones")),
     path("config-tabla/", include("seguridad.urls_table_config")),
     path("menu/", views.menu_view, name="menu"),
     path("mensajes/borrar-todos/", views.clear_mensajes_view, name="clear_mensajes"),

@@ -126,3 +126,64 @@ class Mensaje(models.Model):
 
     def __str__(self) -> str:
         return f"{self.id_principal or self.asunto_resumen or '(sin ID)'}"
+
+
+class TipoActuacion(models.Model):
+    """Catálogo de tipos de actuación."""
+
+    id_tipo_actuacion = models.AutoField(primary_key=True, db_column="IdTipoActuacion")
+    grupo = models.IntegerField(db_column="Grupo", default=0)
+    orden = models.PositiveSmallIntegerField(db_column="Orden", default=0)
+    breve = models.CharField(max_length=256, db_column="Breve")
+    amplio = models.TextField(max_length=8192, blank=True, default="", db_column="Amplio")
+    cierra = models.BooleanField(default=False, db_column="Cierra")
+
+    class Meta:
+        managed = True
+        db_table = "TipoActuaciones"
+        verbose_name = "Tipo de actuación"
+        verbose_name_plural = "Tipos de actuación"
+        ordering = ["grupo", "orden"]
+
+    def __str__(self) -> str:
+        return f"[{self.grupo}.{self.orden}] {self.breve}"
+
+
+class Actuacion(models.Model):
+    """Registro de actuaciones sobre mensajes."""
+
+    id_actuacion = models.AutoField(primary_key=True, db_column="IdActuacion")
+    id_tipo_actuacion = models.ForeignKey(
+        TipoActuacion,
+        on_delete=models.PROTECT,
+        db_column="IdTipoActuacion",
+        verbose_name="Tipo de actuación",
+    )
+    id_user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="IdUser",
+        verbose_name="Usuario",
+    )
+    fecha_hora = models.DateTimeField(
+        default=timezone.now,
+        db_column="FechaHora",
+        verbose_name="Fecha y hora",
+    )
+    breve = models.CharField(max_length=256, db_column="Breve", verbose_name="Breve")
+    amplio = models.TextField(
+        max_length=8192, blank=True, default="", db_column="Amplio", verbose_name="Amplio"
+    )
+    cierra = models.BooleanField(default=False, db_column="Cierra", verbose_name="Cierra")
+
+    class Meta:
+        managed = True
+        db_table = "Actuaciones"
+        verbose_name = "Actuación"
+        verbose_name_plural = "Actuaciones"
+        ordering = ["-fecha_hora"]
+
+    def __str__(self) -> str:
+        return f"{self.fecha_hora:%d/%m/%Y %H:%M} — {self.breve[:60]}"

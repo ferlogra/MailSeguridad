@@ -25,7 +25,7 @@ from .forms import (
     SignupForm,
     VerificationForm,
 )
-from .models import Mensaje, PasswordResetToken, TableConfig, User
+from .models import Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
 
 from .table_manager import (
     build_table_context,
@@ -563,4 +563,150 @@ def clear_mensajes_view(request: HttpRequest) -> HttpResponse:
     count, _ = Mensaje.objects.all().delete()
     messages.success(request, f"Se han borrado {count} mensajes de la base de datos.")
     return redirect("menu")
+
+
+# ── Tipo Actuaciones ─────────────────────────────────────────────
+
+
+@login_required
+def tipoactuaciones_list_view(request: HttpRequest) -> HttpResponse:
+    """List/catalog of TipoActuacion records."""
+    user = cast(Any, request).user
+    search = request.GET.get("q", "").strip()
+    qs = TipoActuacion.objects.all()
+    if search:
+        qs = qs.filter(
+            Q(breve__icontains=search)
+            | Q(amplio__icontains=search)
+            | Q(grupo__icontains=search)
+        )
+    cfg = tables["tipoactuaciones_list"]
+    table_ctx = build_table_context(request, user, cfg)
+    sort_spec = table_ctx["sort_spec"]
+    if sort_spec:
+        order = [
+            f"-{s['field']}" if s["direction"] == "desc" else s["field"]
+            for s in sort_spec
+        ]
+        qs = qs.order_by(*order)
+    else:
+        qs = qs.order_by("grupo", "orden")
+    records, page_obj, is_paginated = paginate_queryset(request, qs, cfg.paginate_by)
+    return render(request, "seguridad/tipoactuaciones_list.html", {
+        "records": records,
+        "search": search,
+        "page_obj": page_obj,
+        "is_paginated": is_paginated,
+        **table_ctx,
+    })
+
+
+@login_required
+def tipoactuacion_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """View/edit a single TipoActuacion record."""
+    obj = get_object_or_404(TipoActuacion, pk=pk)
+    if request.method == "POST":
+        if request.POST.get("_method") == "delete":
+            obj.delete()
+            messages.success(request, f"Tipo de actuación {pk} eliminado.")
+            return redirect("tipoactuaciones_list")
+        # save
+        obj.grupo = int(request.POST.get("grupo", 0))
+        obj.orden = int(request.POST.get("orden", 0))
+        obj.breve = request.POST.get("breve", "").strip()
+        obj.amplio = request.POST.get("amplio", "").strip()
+        obj.cierra = request.POST.get("cierra") == "on"
+        obj.save()
+        messages.success(request, f"Tipo de actuación {pk} actualizado.")
+        return redirect("tipoactuacion_detail", pk=pk)
+    from .table_manager import tables as _t
+    cfg = _t.get("tipoactuaciones_list")
+    field_labels = dict(cfg.columns) if cfg else {}
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    return render(request, "seguridad/tipoactuacion_detail.html", {
+        "obj": obj,
+        "field_labels": field_labels,
+        "is_admin": is_admin,
+    })
+
+
+# ── Actuaciones ──────────────────────────────────────────────────
+
+
+@login_required
+def actuaciones_list_view(request: HttpRequest) -> HttpResponse:
+    """List of Actuacion records."""
+    user = cast(Any, request).user
+    search = request.GET.get("q", "").strip()
+    qs = Actuacion.objects.select_related("id_tipo_actuacion", "id_user").all()
+    if search:
+        qs = qs.filter(
+            Q(breve__icontains=search)
+            | Q(amplio__icontains=search)
+            | Q(id_tipo_actuacion__breve__icontains=search)
+        )
+    cfg = tables["actuaciones_list"]
+    table_ctx = build_table_context(request, user, cfg)
+    sort_spec = table_ctx["sort_spec"]
+    if sort_spec:
+        order = [
+            f"-{s['field']}" if s["direction"] == "desc" else s["field"]
+            for s in sort_spec
+        ]
+        qs = qs.order_by(*order)
+    else:
+        qs = qs.order_by("-fecha_hora")
+    records, page_obj, is_paginated = paginate_queryset(request, qs, cfg.paginate_by)
+    return render(request, "seguridad/actuaciones_list.html", {
+        "records": records,
+        "search": search,
+        "page_obj": page_obj,
+        "is_paginated": is_paginated,
+        **table_ctx,
+    })
+
+
+@login_required
+def actuacion_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """View/edit a single Actuacion record."""
+    obj = get_object_or_404(Actuacion.objects.select_related("id_tipo_actuacion", "id_user"), pk=pk)
+    if request.method == "POST":
+        if request.POST.get("_method") == "delete":
+            obj.delete()
+            messages.success(request, f"Actuación {pk} eliminada.")
+            return redirect("actuaciones_list")
+        # save
+        tipo_pk = request.POST.get("id_tipo_actuacion", "").strip()
+        if tipo_pk:
+            obj.id_tipo_actuacion = get_object_or_404(TipoActuacion, pk=int(tipo_pk))
+        from django.utils import timezone as tz
+        fecha_str = request.POST.get("fecha_hora", "").strip()
+        if fecha_str:
+            from datetime import datetime
+            try:
+                obj.fecha_hora = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                obj.fecha_hora = tz.now()
+        else:
+            obj.fecha_hora = tz.now()
+        obj.breve = request.POST.get("breve", "").strip()
+        obj.amplio = request.POST.get("amplio", "").strip()
+        obj.cierra = request.POST.get("cierra") == "on"
+        obj.id_user = request.user
+        obj.save()
+        messages.success(request, f"Actuación {pk} actualizada.")
+        return redirect("actuacion_detail", pk=pk)
+    from .table_manager import tables as _t
+    cfg = _t.get("actuaciones_list")
+    field_labels = dict(cfg.columns) if cfg else {}
+    tipos = TipoActuacion.objects.all().order_by("grupo", "orden")
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    return render(request, "seguridad/actuacion_detail.html", {
+        "obj": obj,
+        "field_labels": field_labels,
+        "tipos": tipos,
+        "is_admin": is_admin,
+    })
 

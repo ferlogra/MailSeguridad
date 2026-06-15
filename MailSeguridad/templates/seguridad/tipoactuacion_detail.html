@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load seguridad_extras %}
+{% block title %}MailSeguridad — Tipo actuación #{{ obj.id_tipo_actuacion }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Tipo de actuación #{{ obj.id_tipo_actuacion }}</h1>
+  <a href="{% url 'tipoactuaciones_list' %}" class="btn btn-secondary">← Volver</a>
+</div>
+
+<form method="post" class="detail-form">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="save">
+
+  <div class="detail-id-bar">
+    <span class="detail-id-label">ID</span>
+    <span class="detail-id-value">{{ obj.id_tipo_actuacion }}</span>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-field">
+      <label for="id_grupo">{{ field_labels|dict_key:"grupo"|default:"Grupo" }}</label>
+      <input type="number" id="id_grupo" name="grupo" class="field" value="{{ obj.grupo }}">
+    </div>
+    <div class="detail-field">
+      <label for="id_orden">{{ field_labels|dict_key:"orden"|default:"Orden" }}</label>
+      <input type="number" id="id_orden" name="orden" class="field" value="{{ obj.orden }}" min="0" max="255">
+    </div>
+    <div class="detail-field">
+      <label for="id_breve">{{ field_labels|dict_key:"breve"|default:"Breve" }}</label>
+      <textarea id="id_breve" name="breve" class="field" rows="3" maxlength="256">{{ obj.breve }}</textarea>
+    </div>
+    <div class="detail-field">
+      <label for="id_amplio">{{ field_labels|dict_key:"amplio"|default:"Amplio" }}</label>
+      <textarea id="id_amplio" name="amplio" class="field" rows="6" maxlength="8192">{{ obj.amplio }}</textarea>
+    </div>
+    <div class="detail-field">
+      <label>
+        <input type="checkbox" name="cierra"{% if obj.cierra %} checked{% endif %}>
+        {{ field_labels|dict_key:"cierra"|default:"Cierra el mensaje" }}
+      </label>
+    </div>
+  </div>
+
+  <div class="detail-actions">
+    <button type="submit" class="btn btn-primary">💾 Guardar cambios</button>
+    <a href="{% url 'tipoactuaciones_list' %}" class="btn btn-secondary">Cancelar</a>
+    {% if is_admin %}
+      <button type="submit" class="btn btn-danger" style="margin-left:auto;"
+              form="delete-form">🗑️ Eliminar</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if is_admin %}
+<form id="delete-form" method="post" action="{% url 'tipoactuacion_detail' pk=obj.id_tipo_actuacion %}"
+      onsubmit="return confirm('¿Estás seguro de eliminar el tipo de actuación #{{ obj.id_tipo_actuacion }}?');">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="delete">
+</form>
+{% endif %}
+{% endblock %}

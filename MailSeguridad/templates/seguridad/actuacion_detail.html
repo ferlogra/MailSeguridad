@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load seguridad_extras %}
+{% block title %}MailSeguridad — Actuación #{{ obj.id_actuacion }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Actuación #{{ obj.id_actuacion }}</h1>
+  <a href="{% url 'actuaciones_list' %}" class="btn btn-secondary">← Volver</a>
+</div>
+
+<form method="post" class="detail-form">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="save">
+
+  <div class="detail-id-bar">
+    <span class="detail-id-label">ID</span>
+    <span class="detail-id-value">{{ obj.id_actuacion }}</span>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-field">
+      <label for="id_id_tipo_actuacion">{{ field_labels|dict_key:"id_tipo_actuacion"|default:"Tipo actuación" }}</label>
+      <select id="id_id_tipo_actuacion" name="id_tipo_actuacion" class="field">
+        <option value="">— Seleccionar —</option>
+        {% for t in tipos %}
+          <option value="{{ t.id_tipo_actuacion }}"{% if obj.id_tipo_actuacion_id == t.id_tipo_actuacion %} selected{% endif %}>
+            [{{ t.grupo }}.{{ t.orden }}] {{ t.breve }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="detail-field">
+      <label for="id_fecha_hora">{{ field_labels|dict_key:"fecha_hora"|default:"Fecha/Hora" }}</label>
+      <input type="datetime-local" id="id_fecha_hora" name="fecha_hora" class="field"
+             value="{{ obj.fecha_hora|date:'Y-m-d\TH:i' }}">
+    </div>
+    <div class="detail-field">
+      <label for="id_breve">{{ field_labels|dict_key:"breve"|default:"Breve" }}</label>
+      <textarea id="id_breve" name="breve" class="field" rows="3" maxlength="256">{{ obj.breve }}</textarea>
+    </div>
+    <div class="detail-field">
+      <label for="id_amplio">{{ field_labels|dict_key:"amplio"|default:"Amplio" }}</label>
+      <textarea id="id_amplio" name="amplio" class="field" rows="6" maxlength="8192">{{ obj.amplio }}</textarea>
+    </div>
+    <div class="detail-field">
+      <label>
+        <input type="checkbox" name="cierra"{% if obj.cierra %} checked{% endif %}>
+        {{ field_labels|dict_key:"cierra"|default:"Cierra el mensaje" }}
+      </label>
+    </div>
+    <div class="detail-field">
+      <label>{{ field_labels|dict_key:"id_user"|default:"Usuario" }}</label>
+      <input type="text" class="field" value="{{ obj.id_user.username|default:'' }}" disabled>
+    </div>
+  </div>
+
+  <div class="detail-actions">
+    <button type="submit" class="btn btn-primary">💾 Guardar cambios</button>
+    <a href="{% url 'actuaciones_list' %}" class="btn btn-secondary">Cancelar</a>
+    {% if is_admin %}
+      <button type="submit" class="btn btn-danger" style="margin-left:auto;"
+              form="delete-form">🗑️ Eliminar</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if is_admin %}
+<form id="delete-form" method="post" action="{% url 'actuacion_detail' pk=obj.id_actuacion %}"
+      onsubmit="return confirm('¿Estás seguro de eliminar la actuación #{{ obj.id_actuacion }}?');">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="delete">
+</form>
+{% endif %}
+{% endblock %}
