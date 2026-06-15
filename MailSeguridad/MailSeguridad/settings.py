@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-APP_VERSION = "1.0.0"
+from .version import VERSION as APP_VERSION  # single source of truth
 
 SECRET_KEY = os.environ.get(
     "MAILSEG_SECRET_KEY",
