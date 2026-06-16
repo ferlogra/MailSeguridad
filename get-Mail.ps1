@@ -641,7 +641,10 @@ begin {
             "conversationId",
             "conversationIndex",
             "webLink",
-            "isRead"
+            "isRead",
+            "toRecipients",
+            "ccRecipients",
+            "uniqueBody"
         )
 
         $graphDate = $ReceivedAfter.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
