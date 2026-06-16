@@ -115,7 +115,6 @@ class Mensaje(models.Model):
     message_ids = models.TextField(null=True, blank=True, db_column="MessageIds")
     outlook_urls = models.TextField(null=True, blank=True, db_column="OutlookUrls")
     revision = models.TextField(null=True, blank=True, db_column="Revision")
-    id_actuacion = models.IntegerField(default=0, db_column="IdActuacion")
     body = models.TextField(null=True, blank=True, db_column="Body")
     is_body_html = models.BooleanField(null=True, blank=True, db_column="IsBodyHTML")
     to = models.TextField(null=True, blank=True, db_column="To")
@@ -185,12 +184,10 @@ class Actuacion(models.Model):
         max_length=8192, blank=True, default="", db_column="Amplio", verbose_name="Amplio"
     )
     cierra = models.BooleanField(default=False, db_column="Cierra", verbose_name="Cierra")
-    id_mensaje = models.ForeignKey(
-        Mensaje,
-        on_delete=models.CASCADE,
+    mensaje = models.TextField(
         null=True, blank=True,
-        db_column="IdMensaje",
-        verbose_name="Mensaje",
+        db_column="Mensaje",
+        verbose_name="ID del mensaje (InternetMessageId)",
     )
 
     class Meta:

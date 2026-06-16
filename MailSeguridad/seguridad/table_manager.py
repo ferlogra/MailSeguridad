@@ -210,7 +210,6 @@ MENSAJES_ALL_COLS: dict[str, str] = {
     "message_ids": "Message IDs",
     "outlook_urls": "URLs Outlook",
     "revision": "Revisión",
-    "id_actuacion": "Id. Actuación",
     "is_body_html": "Body HTML",
     "to": "Para (To)",
     "cc": "Cc",
@@ -259,7 +258,7 @@ tables.register(TableView(
         "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
         "crq_asociado", "ventana_o_fecha", "num_mensajes", "ultimo_email",
         "remitente_ultimo", "message_ids", "outlook_urls", "revision",
-        "id_actuacion", "is_body_html", "to", "cc", "user",
+        "is_body_html", "to", "cc", "user",
         "internet_message_id", "conversation_id",
     ],
     sort_labels={
@@ -277,7 +276,6 @@ tables.register(TableView(
         "message_ids": "Message IDs",
         "outlook_urls": "URLs Outlook",
         "revision": "Revisión",
-        "id_actuacion": "Id. Actuación",
         "is_body_html": "Body HTML",
         "to": "Para (To)",
         "cc": "Cc",
@@ -288,7 +286,7 @@ tables.register(TableView(
     default_cols=[
         "id", "familia", "id_principal", "grupo", "asunto_resumen",
         "estado", "accion_tipo", "num_mensajes", "ultimo_email",
-        "remitente_ultimo", "is_body_html", "to", "user", "revision", "id_actuacion",
+        "remitente_ultimo", "is_body_html", "to", "user", "revision",
     ],
     paginate_by=50,
     row_action_url_name="mensaje_detail",

@@ -439,9 +439,10 @@
     var nuevaBtn = document.getElementById('act-btn-nueva');
     var mensajeLabel = document.getElementById('act-modal-mensaje-label');
     var currentMensajeId = null;
+    var currentMensajeInternetId = null;
     var tiposCache = null;
 
-    function closeModal() { modal.style.display = 'none'; currentMensajeId = null; tiposCache = null; }
+    function closeModal() { modal.style.display = 'none'; currentMensajeId = null; currentMensajeInternetId = null; tiposCache = null; }
     closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
@@ -450,8 +451,9 @@
       var btn = e.target.closest('.btn-act');
       if (!btn) return;
       currentMensajeId = btn.dataset.mensajeId;
+      currentMensajeInternetId = btn.dataset.mensajeInternetId;
       mensajeLabel.textContent = btn.dataset.mensajeLabel || '#' + currentMensajeId;
-      loadActuaciones(currentMensajeId);
+      loadActuaciones(currentMensajeInternetId);
       modal.style.display = 'flex';
     });
 
@@ -462,7 +464,7 @@
       tbody.innerHTML = '';
       msg.textContent = '';
       removeForm();
-      fetch('/actuaciones/api/por-mensaje/' + mensajeId + '/')
+      fetch('/actuaciones/api/por-mensaje/' + encodeURIComponent(mensajeId) + '/')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           loading.style.display = 'none';
@@ -580,7 +582,7 @@
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
         body: JSON.stringify({
           id_tipo_actuacion: parseInt(tipo),
-          id_mensaje: currentMensajeId,
+          mensaje: currentMensajeInternetId,
           breve: breve,
           amplio: document.getElementById('act-new-amplio').value.trim(),
           cierra: document.getElementById('act-new-cierra').checked

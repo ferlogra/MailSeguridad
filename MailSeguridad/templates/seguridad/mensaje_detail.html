@@ -20,7 +20,7 @@
     {% for fld in editable_fields %}
     <div class="detail-field">
       <label for="id_{{ fld }}">{{ field_labels|dict_key:fld|default:fld }}</label>
-      {% if fld == 'num_mensajes' or fld == 'id_actuacion' %}
+      {% if fld == 'num_mensajes' %}
         <input type="number" id="id_{{ fld }}" name="{{ fld }}"
                class="field" value="{{ mensaje|dict_key:fld|default:'0' }}">
       {% elif fld == 'is_body_html' %}

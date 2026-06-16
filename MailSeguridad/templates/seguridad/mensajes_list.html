@@ -132,7 +132,7 @@
       <tr>
         {% if row_action_url_name %}
         <td class="col-actions-header">
-          <button class="btn btn-secondary btn-act" data-mensaje-id="{{ m.id }}" data-mensaje-label="{{ m.id_principal|default:m.asunto_resumen|default:m.id }}" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Act.</button>
+          <button class="btn btn-secondary btn-act" data-mensaje-id="{{ m.id }}" data-mensaje-internet-id="{{ m.internet_message_id|default:'' }}" data-mensaje-label="{{ m.id_principal|default:m.asunto_resumen|default:m.id }}" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Act.</button>
         </td>
         <td class="col-actions-header">
           <a href="{% url row_action_url_name pk=m.id %}" class="btn btn-primary" style="font-size:0.75rem;padding:0.25rem 0.5rem;">🔍 Ver</a>

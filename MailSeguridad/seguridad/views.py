@@ -600,9 +600,6 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         num_val = request.POST.get("num_mensajes", "").strip()
         mensaje.num_mensajes = int(num_val) if num_val else None
 
-        act_val = request.POST.get("id_actuacion", "").strip()
-        mensaje.id_actuacion = int(act_val) if act_val else 0
-
         # Boolean field
         mensaje.is_body_html = request.POST.get("is_body_html") == "on"
 
@@ -622,7 +619,7 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
         "crq_asociado", "ventana_o_fecha", "ultimo_email",
         "remitente_ultimo", "num_mensajes", "message_ids", "outlook_urls",
-        "revision", "id_actuacion", "body", "is_body_html", "to", "cc", "user",
+        "revision", "body", "is_body_html", "to", "cc", "user",
         "internet_message_headers", "internet_message_id", "conversation_id",
     ]
     user = cast(Any, request).user
@@ -829,9 +826,9 @@ def actuacion_create_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
-def actuaciones_por_mensaje_api(request: HttpRequest, mensaje_id: int) -> JsonResponse:
+def actuaciones_por_mensaje_api(request: HttpRequest, mensaje_id: str) -> JsonResponse:
     """Return JSON list of actuaciones for a mensaje."""
-    qs = Actuacion.objects.filter(id_mensaje_id=mensaje_id).select_related("id_tipo_actuacion", "id_user").order_by("-fecha_hora")
+    qs = Actuacion.objects.filter(mensaje=mensaje_id).select_related("id_tipo_actuacion", "id_user").order_by("-fecha_hora")
     data = [
         {
             "id_actuacion": a.id_actuacion,
@@ -868,7 +865,7 @@ def actuacion_create_api(request: HttpRequest) -> JsonResponse:
         breve=body.get("breve", "").strip(),
         amplio=body.get("amplio", "").strip(),
         cierra=body.get("cierra", False),
-        id_mensaje_id=body.get("id_mensaje"),
+        mensaje=body.get("mensaje"),
     )
     obj.save()
     return JsonResponse({"status": "ok", "id": obj.pk})

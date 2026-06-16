@@ -46,8 +46,8 @@ class TipoActuacionAdmin(admin.ModelAdmin):
 
 @admin.register(Actuacion)
 class ActuacionAdmin(admin.ModelAdmin):
-    list_display = ["id_actuacion", "id_tipo_actuacion", "fecha_hora", "breve", "cierra", "id_mensaje", "id_user"]
+    list_display = ["id_actuacion", "id_tipo_actuacion", "fecha_hora", "breve", "cierra", "mensaje", "id_user"]
     list_filter = ["cierra", "fecha_hora"]
     search_fields = ["breve", "amplio"]
-    list_select_related = ["id_tipo_actuacion", "id_user", "id_mensaje"]
+    list_select_related = ["id_tipo_actuacion", "id_user"]
     ordering = ["-fecha_hora"]
