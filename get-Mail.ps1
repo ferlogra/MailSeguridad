@@ -1155,6 +1155,9 @@ CREATE TABLE IF NOT EXISTS Mensajes (
 "@
         Invoke-SqliteQuery -DataSource $DatabasePath -Query $createTable
 
+        # Índice para ordenación por InternetMessageId (si no existe ya)
+        Invoke-SqliteQuery -DataSource $DatabasePath -Query "CREATE INDEX IF NOT EXISTS idx_mensajes_internetmsgid ON Mensajes(""InternetMessageId"")" -ErrorAction SilentlyContinue
+
         # Los registros se añaden directamente; si la tabla ya existe los datos se acumulan entre ejecuciones
         $insertSql = @"
 INSERT INTO Mensajes (
