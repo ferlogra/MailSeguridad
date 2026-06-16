@@ -421,6 +421,8 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
             | Q(to__icontains=search)
             | Q(cc__icontains=search)
             | Q(user__icontains=search)
+            | Q(internet_message_id__icontains=search)
+            | Q(cs_relacionado__icontains=search)
         )
 
     # ── Advanced filters (AND) ──
