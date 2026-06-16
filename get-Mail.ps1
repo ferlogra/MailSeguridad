@@ -1018,6 +1018,8 @@ begin {
                 To                 = $latest.To
                 Cc                 = $latest.Cc
                 User               = $UserPrincipalName
+                InternetMessageId  = $latest.InternetMessageId
+                ConversationId     = $latest.ConversationId
                 InternetMessageHeaders = $latest.InternetMessageHeaders
             }
         }
@@ -1079,6 +1081,8 @@ begin {
                     To                 = ""
                     Cc                 = ""
                     User               = ""
+                    InternetMessageId  = ""
+                    ConversationId     = ""
                     InternetMessageHeaders = ""
                 }
             )
@@ -1144,6 +1148,8 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     "To"              TEXT,
     "Cc"              TEXT,
     "User"            TEXT,
+    InternetMessageId TEXT,
+    ConversationId    TEXT,
     InternetMessageHeaders TEXT
 )
 "@
@@ -1156,13 +1162,13 @@ INSERT INTO Mensajes (
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
     Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion,
-    Body, IsBodyHTML, "To", "Cc", "User", InternetMessageHeaders
+    Body, IsBodyHTML, "To", "Cc", "User", InternetMessageId, ConversationId, InternetMessageHeaders
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
     @Ventana_o_fecha, @Ultimo_email_2026, @Remitente_ultimo,
     @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion,
-    @Body, @IsBodyHTML, @To, @Cc, @User, @InternetMessageHeaders
+    @Body, @IsBodyHTML, @To, @Cc, @User, @InternetMessageId, @ConversationId, @InternetMessageHeaders
 )
 "@
 
@@ -1192,6 +1198,8 @@ INSERT INTO Mensajes (
                 To              = if ($row.To)              { [string]$row.To }              else { '' }
                 Cc              = if ($row.Cc)              { [string]$row.Cc }              else { '' }
                 User            = if ($row.User)            { [string]$row.User }            else { '' }
+                InternetMessageId = if ($row.InternetMessageId) { [string]$row.InternetMessageId } else { '' }
+                ConversationId    = if ($row.ConversationId)    { [string]$row.ConversationId }    else { '' }
                 InternetMessageHeaders = if ($row.InternetMessageHeaders) { ($row.InternetMessageHeaders | ForEach-Object { "$($_.name): $($_.value)" }) -join "`n" } else { '' }
             }
             $count++

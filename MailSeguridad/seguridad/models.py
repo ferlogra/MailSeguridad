@@ -121,6 +121,8 @@ class Mensaje(models.Model):
     to = models.TextField(null=True, blank=True, db_column="To")
     cc = models.TextField(null=True, blank=True, db_column="Cc")
     internet_message_headers = models.TextField(null=True, blank=True, db_column="InternetMessageHeaders")
+    internet_message_id = models.TextField(null=True, blank=True, db_column="InternetMessageId")
+    conversation_id = models.TextField(null=True, blank=True, db_column="ConversationId")
     user = models.TextField(null=True, blank=True, db_column="User")
 
     class Meta:

@@ -217,6 +217,8 @@ MENSAJES_ALL_COLS: dict[str, str] = {
     "body": "Cuerpo",
     "user": "Usuario",
     "internet_message_headers": "Headers del mensaje",
+    "internet_message_id": "ID del mensaje (Internet)",
+    "conversation_id": "ID de conversación",
 }
 
 

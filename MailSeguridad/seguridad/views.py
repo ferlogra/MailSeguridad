@@ -591,7 +591,7 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
             "crq_asociado", "ventana_o_fecha", "ultimo_email",
             "remitente_ultimo", "message_ids", "outlook_urls", "revision",
             "body", "to", "cc", "user",
-            "internet_message_headers",
+            "internet_message_headers", "internet_message_id", "conversation_id",
         ]
         for fld in text_fields:
             val = request.POST.get(fld, "").strip()
@@ -623,7 +623,7 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "crq_asociado", "ventana_o_fecha", "ultimo_email",
         "remitente_ultimo", "num_mensajes", "message_ids", "outlook_urls",
         "revision", "id_actuacion", "body", "is_body_html", "to", "cc", "user",
-        "internet_message_headers",
+        "internet_message_headers", "internet_message_id", "conversation_id",
     ]
     user = cast(Any, request).user
     is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR

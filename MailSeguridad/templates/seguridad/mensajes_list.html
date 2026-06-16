@@ -148,6 +148,8 @@
               <span style="font-size:0.75rem;">{{ m.body|truncatechars:80 }}</span>
             {% elif col_key == 'internet_message_headers' %}
               <span style="font-size:0.75rem;">{{ m.internet_message_headers|truncatechars:60 }}</span>
+            {% elif col_key == 'internet_message_id' or col_key == 'conversation_id' %}
+              <span style="font-size:0.75rem;">{{ m|dict_key:col_key|truncatechars:60 }}</span>
             {% elif col_key == 'ultimo_email' %}
               {{ m.ultimo_email|render_links }}
             {% elif col_key == 'num_mensajes' %}

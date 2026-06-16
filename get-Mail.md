@@ -119,6 +119,8 @@ Si la BBDD no existe, se crea junto con la tabla. Si ya existe, los nuevos regis
 | `To` (v1.9+) | Lista de destinatarios del mensaje |
 | `Cc` (v1.9+) | Lista de destinatarios en copia (CC) |
 | `InternetMessageHeaders` (v2.1+) | Cabeceras completas del mensaje en texto plano (formato `name: valor`) |
+| `InternetMessageId` (v2.1+) | ID único del mensaje (InternetMessageId) |
+| `ConversationId` (v2.1+) | ID de la conversación a la que pertenece el mensaje |
 | `User` (v1.8+) | UserPrincipalName del usuario que ejecutó el script |
 
 ---
@@ -206,6 +208,7 @@ Los filtros están definidos en el array `$Filters` dentro del script. Cada filt
 - ✨ Nuevo campo `InternetMessageHeaders` (TEXT) en la tabla `Mensajes` de SQLite. Añadido al CREATE TABLE, al INSERT y mediante ALTER TABLE a bases de datos existentes.
 - ✨ Contiene las cabeceras completas del mensaje en texto plano (`name: valor`), extraídas de `$Message.InternetMessageHeaders`.
 - ✨ Incluido también en la exportación a Excel como columna adicional.
+- ✨ Nuevos campos `InternetMessageId` (TEXT) y `ConversationId` (TEXT) en la tabla `Mensajes` de SQLite y exportación a Excel.
 
 ---
 
