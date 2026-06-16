@@ -165,7 +165,7 @@ begin {
 #     [datetime]$fechaInicio
 # )
 
-    $version= "1.7"
+    $version= "1.8"
 
     function Write-Log {
         param(
@@ -838,7 +838,8 @@ begin {
     function Build-OutputRows {
         [CmdletBinding()]
         param(
-            [Parameter(Mandatory)] [array]$Messages
+            [Parameter(Mandatory)] [array]$Messages,
+            [string]$UserPrincipalName = ""
         )
 
         $nuevo = 0
@@ -947,6 +948,8 @@ begin {
                 Num_Mensajes       = $msgs
                 MessageIds         = $messageIds
                 OutlookUrls        = $outlookUrls
+                Body               = [string]$latest.Body
+                User               = $UserPrincipalName
             }
         }
 
@@ -1002,6 +1005,8 @@ begin {
                     Remitente_ultimo   = ""
                     MessageIds         = ""
                     OutlookUrls        = ""
+                    Body               = ""
+                    User               = ""
                 }
             )
         }
@@ -1060,7 +1065,9 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     MessageIds        TEXT,
     OutlookUrls       TEXT,
     Revision          TEXT,
-    IdActuacion       INTEGER NOT NULL DEFAULT 0
+    IdActuacion       INTEGER NOT NULL DEFAULT 0,
+    Body              TEXT,
+    User              TEXT
 )
 "@
         Invoke-SqliteQuery -DataSource $DatabasePath -Query $createTable
@@ -1071,12 +1078,14 @@ INSERT INTO Mensajes (
     Familia, ID_principal, Grupo, Filtro, Asunto_resumen, Estado,
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
-    Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion
+    Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion,
+    Body, User
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
     @Ventana_o_fecha, @Ultimo_email_2026, @Remitente_ultimo,
-    @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion
+    @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion,
+    @Body, @User
 )
 "@
 
@@ -1101,6 +1110,8 @@ INSERT INTO Mensajes (
                 OutlookUrls     = if ($row.OutlookUrls)     { [string]$row.OutlookUrls }     else { '' }
                 Revision        = $revisionTimestamp
                 IdActuacion     = 0
+                Body            = if ($row.Body)            { [string]$row.Body }            else { '' }
+                User            = if ($row.User)            { [string]$row.User }            else { '' }
             }
             $count++
         }
@@ -1540,7 +1551,7 @@ INSERT INTO Mensajes (
 	}
 
     if( $FilteredMails.Count -gt 0 ) {
-        $Rows= Build-OutputRows -Messages $FilteredMails
+        $Rows= Build-OutputRows -Messages $FilteredMails -UserPrincipalName $user.UserPrincipalName
 
         # Write-Host "Grupos encontrados: $($Rows.Count)/$($FilteredMails.Count)/$($rawMessages.Count)"
         Write-Log "Grupos encontrados: $($Rows.Count)/$($FilteredMails.Count)/$($rawMessages.Count)" "INFO"

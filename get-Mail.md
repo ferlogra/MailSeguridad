@@ -1,6 +1,6 @@
 # get-Mail.ps1
 
-**Versión actual:** 1.7  
+**Versión actual:** 1.8  
 **Última actualización:** 2026-06-16  
 **Requiere:** PowerShell 5.1+
 
@@ -114,6 +114,8 @@ Si la BBDD no existe, se crea junto con la tabla. Si ya existe, los nuevos regis
 | `OutlookUrls` | Lista de URLs a los mensajes en Outlook |
 | `Revision` (v1.5+) | Timestamp de la ejecución (formato `AAAAMMDD-HHmmss`) |
 | `IdActuacion` (v1.7+) | ID de actuación (entero, editable desde la web, por defecto 0) |
+| `Body` (v1.8+) | Cuerpo completo del mensaje de correo |
+| `User` (v1.8+) | UserPrincipalName del usuario que ejecutó el script |
 
 ---
 
@@ -192,6 +194,16 @@ Los filtros están definidos en el array `$Filters` dentro del script. Cada filt
 ---
 
 ## Changelog
+
+### v1.8 (2026-06-16)
+**Aportaciones:**
+
+#### Nuevos campos
+- ✨ Nuevos campos `Body` (TEXT) y `User` (TEXT) en la tabla `Mensajes` de SQLite. Añadidos al CREATE TABLE, al INSERT y mediante ALTER TABLE a bases de datos existentes.
+- ✨ `Body` contiene el cuerpo completo del mensaje (extraído de `$Message.Body.Content`).
+- ✨ `User` contiene el `UserPrincipalName` del usuario autenticado, recibido como parámetro `-UserPrincipalName` en `Build-OutputRows`.
+
+---
 
 ### v1.7 (2026-06-16)
 **Aportaciones:**
