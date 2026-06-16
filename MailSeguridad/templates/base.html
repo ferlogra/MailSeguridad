@@ -464,6 +464,11 @@
       tbody.innerHTML = '';
       msg.textContent = '';
       removeForm();
+      if (!mensajeId) {
+        loading.style.display = 'none';
+        msg.textContent = 'Este mensaje no tiene InternetMessageId. No se pueden gestionar actuaciones.';
+        return;
+      }
       fetch('/actuaciones/api/por-mensaje/' + encodeURIComponent(mensajeId) + '/')
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -572,6 +577,7 @@
     });
 
     function submitCreateForm(form) {
+      if (!currentMensajeInternetId) { msg.textContent = 'El mensaje no tiene InternetMessageId.'; return; }
       var tipo = document.getElementById('act-new-tipo').value;
       if (!tipo) { msg.textContent = 'Selecciona un tipo.'; return; }
       var breve = document.getElementById('act-new-breve').value.trim();
