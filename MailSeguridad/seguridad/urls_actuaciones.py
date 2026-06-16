@@ -12,4 +12,5 @@ urlpatterns = [
     path("api/por-mensaje/<int:mensaje_id>/", views.actuaciones_por_mensaje_api, name="actuaciones_por_mensaje"),
     path("api/crear/", views.actuacion_create_api, name="actuacion_create_api"),
     path("api/<int:pk>/eliminar/", views.actuacion_delete_api, name="actuacion_delete_api"),
+    path("api/<int:pk>/actualizar/", views.actuacion_update_api, name="actuacion_update_api"),
 ]

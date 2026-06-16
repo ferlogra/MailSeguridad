@@ -439,8 +439,9 @@
     var nuevaBtn = document.getElementById('act-btn-nueva');
     var mensajeLabel = document.getElementById('act-modal-mensaje-label');
     var currentMensajeId = null;
+    var tiposCache = null;
 
-    function closeModal() { modal.style.display = 'none'; currentMensajeId = null; }
+    function closeModal() { modal.style.display = 'none'; currentMensajeId = null; tiposCache = null; }
     closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
@@ -460,6 +461,7 @@
       table.style.display = 'none';
       tbody.innerHTML = '';
       msg.textContent = '';
+      removeForm();
       fetch('/actuaciones/api/por-mensaje/' + mensajeId + '/')
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -474,7 +476,10 @@
               '<td>' + (a.tipo_breve || '—') + '</td>' +
               '<td>' + d + '</td>' +
               '<td>' + (a.breve || '') + '</td>' +
-              '<td>' + (a.cierra ? '\u2705' : '\u274C') + '</td>';
+              '<td>' + (a.cierra ? '\u2705' : '\u274C') + '</td>' +
+              '<td><button class="btn btn-secondary act-edit-btn" data-id="' + a.id_actuacion + '" style="font-size:0.7rem;padding:0.15rem 0.35rem;">\u270F\uFE0F</button></td>';
+            // Store full data for edit
+            tr.dataset.actData = JSON.stringify(a);
             tbody.appendChild(tr);
           });
           updateDeleteBtn();
@@ -501,6 +506,27 @@
       return m ? m[1] : '';
     }
 
+    function removeForm() {
+      var old = document.querySelector('.act-new-form');
+      if (old) old.remove();
+    }
+
+    function loadTipos() {
+      if (tiposCache) return Promise.resolve(tiposCache);
+      return fetch('/tipoactuaciones/api/lista/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) { tiposCache = data.tipos || []; return tiposCache; });
+    }
+
+    function tipoOptions(selectedId) {
+      var html = '<option value="">\u2014 Seleccionar \u2014</option>';
+      (tiposCache || []).forEach(function(t) {
+        var sel = t.id === selectedId ? ' selected' : '';
+        html += '<option value="' + t.id + '"' + sel + '>[' + t.grupo + '.' + t.orden + '] ' + t.breve + '</option>';
+      });
+      return html;
+    }
+
     deleteBtn.addEventListener('click', function() {
       var ids = getSelectedIds();
       if (ids.length === 0) return;
@@ -521,53 +547,109 @@
       });
     });
 
+    // ── Nueva actuación ──
     nuevaBtn.addEventListener('click', function() {
-      var oldForm = document.querySelector('.act-new-form');
-      if (oldForm) { oldForm.remove(); return; }
-      fetch('/tipoactuaciones/api/lista/')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          var tipos = data.tipos || [];
-          var form = document.createElement('div');
-          form.className = 'act-new-form';
-          form.innerHTML =
-            '<div class="field-full"><label>Tipo</label><select id="act-new-tipo" class="field">' +
-            '<option value="">\u2014 Seleccionar \u2014</option>' +
-            tipos.map(function(t) { return '<option value="' + t.id + '">[' + t.grupo + '.' + t.orden + '] ' + t.breve + '</option>'; }).join('') +
-            '</select></div>' +
-            '<div class="field-full"><label>Breve</label><textarea id="act-new-breve" class="field" rows="2" maxlength="256"></textarea></div>' +
-            '<div class="field-full"><label>Amplio</label><textarea id="act-new-amplio" class="field" rows="3" maxlength="8192"></textarea></div>' +
-            '<div><label><input type="checkbox" id="act-new-cierra"> Cierra el mensaje</label></div>' +
-            '<div style="text-align:right;"><button class="btn btn-primary" id="act-new-save">\uD83D\uDCBE Guardar</button></div>';
-          document.querySelector('.modal-body').appendChild(form);
-          document.getElementById('act-new-save').addEventListener('click', function() {
-            var tipo = document.getElementById('act-new-tipo').value;
-            if (!tipo) { msg.textContent = 'Selecciona un tipo.'; return; }
-            var breve = document.getElementById('act-new-breve').value.trim();
-            if (!breve) { msg.textContent = 'Breve es obligatorio.'; return; }
-            msg.textContent = 'Guardando...';
-            fetch('/actuaciones/api/crear/', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
-              body: JSON.stringify({
-                id_tipo_actuacion: parseInt(tipo),
-                id_mensaje: currentMensajeId,
-                breve: breve,
-                amplio: document.getElementById('act-new-amplio').value.trim(),
-                cierra: document.getElementById('act-new-cierra').checked
-              })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function() {
-              msg.textContent = 'Creada.';
-              form.remove();
-              loadActuaciones(currentMensajeId);
-            })
-            .catch(function(err) { msg.textContent = 'Error: ' + err; });
-          });
-        })
-        .catch(function(err) { msg.textContent = 'Error al cargar tipos: ' + err; });
+      var existing = document.querySelector('.act-new-form');
+      if (existing) { existing.remove(); return; }
+      loadTipos().then(function() {
+        var form = document.createElement('div');
+        form.className = 'act-new-form';
+        form.dataset.mode = 'create';
+        form.innerHTML =
+          '<div class="field-full"><label>Tipo</label><select id="act-new-tipo" class="field">' + tipoOptions(null) + '</select></div>' +
+          '<div class="field-full"><label>Breve</label><textarea id="act-new-breve" class="field" rows="2" maxlength="256"></textarea></div>' +
+          '<div class="field-full"><label>Amplio</label><textarea id="act-new-amplio" class="field" rows="3" maxlength="8192"></textarea></div>' +
+          '<div><label><input type="checkbox" id="act-new-cierra"> Cierra el mensaje</label></div>' +
+          '<div style="text-align:right;">' +
+          '<button class="btn btn-primary" id="act-new-save">\uD83D\uDCBE Guardar</button>' +
+          ' <button class="btn btn-secondary" id="act-new-cancel">Cancelar</button></div>';
+        document.querySelector('.modal-body').appendChild(form);
+        document.getElementById('act-new-save').addEventListener('click', function() { submitCreateForm(form); });
+        document.getElementById('act-new-cancel').addEventListener('click', function() { form.remove(); });
+      });
     });
+
+    function submitCreateForm(form) {
+      var tipo = document.getElementById('act-new-tipo').value;
+      if (!tipo) { msg.textContent = 'Selecciona un tipo.'; return; }
+      var breve = document.getElementById('act-new-breve').value.trim();
+      if (!breve) { msg.textContent = 'Breve es obligatorio.'; return; }
+      msg.textContent = 'Guardando...';
+      fetch('/actuaciones/api/crear/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+        body: JSON.stringify({
+          id_tipo_actuacion: parseInt(tipo),
+          id_mensaje: currentMensajeId,
+          breve: breve,
+          amplio: document.getElementById('act-new-amplio').value.trim(),
+          cierra: document.getElementById('act-new-cierra').checked
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        msg.textContent = 'Creada.';
+        form.remove();
+        loadActuaciones(currentMensajeId);
+      })
+      .catch(function(err) { msg.textContent = 'Error: ' + err; });
+    }
+
+    // ── Editar actuación ──
+    document.addEventListener('click', function(e) {
+      var editBtn = e.target.closest('.act-edit-btn');
+      if (!editBtn) return;
+      var tr = editBtn.closest('tr');
+      if (!tr || !tr.dataset.actData) return;
+      var a = JSON.parse(tr.dataset.actData);
+      removeForm();  // remove any existing form
+
+      loadTipos().then(function() {
+        var form = document.createElement('div');
+        form.className = 'act-new-form';
+        form.dataset.mode = 'edit';
+        form.dataset.editId = a.id_actuacion;
+        var fechaVal = a.fecha_hora ? a.fecha_hora.substring(0, 16) : '';
+        form.innerHTML =
+          '<div class="field-full"><label>Tipo</label><select id="act-new-tipo" class="field">' + tipoOptions(a.id_tipo_actuacion) + '</select></div>' +
+          '<div class="field-full"><label>Fecha/Hora</label><input type="datetime-local" id="act-new-fecha" class="field" value="' + fechaVal + '"></div>' +
+          '<div class="field-full"><label>Breve</label><textarea id="act-new-breve" class="field" rows="2" maxlength="256">' + (a.breve || '') + '</textarea></div>' +
+          '<div class="field-full"><label>Amplio</label><textarea id="act-new-amplio" class="field" rows="3" maxlength="8192">' + (a.amplio || '') + '</textarea></div>' +
+          '<div><label><input type="checkbox" id="act-new-cierra"' + (a.cierra ? ' checked' : '') + '> Cierra el mensaje</label></div>' +
+          '<div style="text-align:right;">' +
+          '<button class="btn btn-primary" id="act-new-save">\uD83D\uDCBE Guardar cambios</button>' +
+          ' <button class="btn btn-secondary" id="act-new-cancel">Cancelar</button></div>';
+        document.querySelector('.modal-body').appendChild(form);
+        document.getElementById('act-new-save').addEventListener('click', function() { submitEditForm(form, a.id_actuacion); });
+        document.getElementById('act-new-cancel').addEventListener('click', function() { form.remove(); });
+      });
+    });
+
+    function submitEditForm(form, id) {
+      var tipo = document.getElementById('act-new-tipo').value;
+      if (!tipo) { msg.textContent = 'Selecciona un tipo.'; return; }
+      var breve = document.getElementById('act-new-breve').value.trim();
+      if (!breve) { msg.textContent = 'Breve es obligatorio.'; return; }
+      msg.textContent = 'Guardando...';
+      fetch('/actuaciones/api/' + id + '/actualizar/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+        body: JSON.stringify({
+          id_tipo_actuacion: parseInt(tipo),
+          fecha_hora: document.getElementById('act-new-fecha').value,
+          breve: breve,
+          amplio: document.getElementById('act-new-amplio').value.trim(),
+          cierra: document.getElementById('act-new-cierra').checked
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        msg.textContent = 'Actualizada.';
+        form.remove();
+        loadActuaciones(currentMensajeId);
+      })
+      .catch(function(err) { msg.textContent = 'Error: ' + err; });
+    }
   })();
   </script>
 </body>

@@ -826,6 +826,7 @@ def actuaciones_por_mensaje_api(request: HttpRequest, mensaje_id: int) -> JsonRe
     data = [
         {
             "id_actuacion": a.id_actuacion,
+            "id_tipo_actuacion": a.id_tipo_actuacion_id,
             "tipo_breve": a.id_tipo_actuacion.breve if a.id_tipo_actuacion else "",
             "fecha_hora": a.fecha_hora.isoformat() if a.fecha_hora else None,
             "breve": a.breve,
@@ -871,6 +872,34 @@ def actuacion_delete_api(request: HttpRequest, pk: int) -> JsonResponse:
     obj = get_object_or_404(Actuacion, pk=pk)
     obj.delete()
     return JsonResponse({"status": "ok"})
+
+
+@login_required
+@require_http_methods(["POST"])
+def actuacion_update_api(request: HttpRequest, pk: int) -> JsonResponse:
+    """Update an actuacion via JSON API."""
+    obj = get_object_or_404(Actuacion, pk=pk)
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    tipo_pk = body.get("id_tipo_actuacion")
+    if tipo_pk:
+        obj.id_tipo_actuacion = get_object_or_404(TipoActuacion, pk=tipo_pk)
+    from django.utils import timezone as tz
+    fecha_str = body.get("fecha_hora", "").strip()
+    if fecha_str:
+        from datetime import datetime
+        try:
+            obj.fecha_hora = datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M")
+        except ValueError:
+            obj.fecha_hora = tz.now()
+    obj.breve = body.get("breve", obj.breve).strip()
+    obj.amplio = body.get("amplio", obj.amplio).strip()
+    obj.cierra = body.get("cierra", obj.cierra)
+    obj.id_user = request.user
+    obj.save()
+    return JsonResponse({"status": "ok", "id": obj.pk})
 
 
 @login_required
