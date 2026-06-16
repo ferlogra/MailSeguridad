@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 from typing import Any, cast
 
@@ -965,33 +966,33 @@ def actuacion_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
 @login_required
 def docs_view(request: HttpRequest) -> HttpResponse:
     """View documentation markdown files from the project directories."""
-    import os, glob
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    md_files = sorted(glob.glob(os.path.join(project_root, "**", "*.md"), recursive=True))
+    import glob
+    import markdown as md_lib
+
+    # Project root is C:\ps1 (parent of Django project root)
+    project_root = settings.BASE_DIR.parent
+    md_files = sorted(glob.glob(os.path.join(str(project_root), "**", "*.md"), recursive=True))
 
     file_list = []
     for fp in md_files:
-        rel = os.path.relpath(fp, project_root)
+        rel = os.path.relpath(fp, str(project_root))
         file_list.append({"path": fp, "name": rel})
 
     selected = request.GET.get("file", "")
-    content = ""
+    content_html = ""
     if selected:
-        matched = [f for f in md_files if os.path.relpath(f, project_root) == selected]
+        matched = [f for f in md_files if os.path.relpath(f, str(project_root)) == selected]
         if matched:
             try:
                 with open(matched[0], "r", encoding="utf-8") as fh:
-                    content = fh.read()
+                    raw = fh.read()
+                content_html = md_lib.markdown(raw, extensions=["fenced_code", "tables"])
             except Exception:
-                content = "*Error al leer el archivo.*"
-
-    user = cast(Any, request).user
-    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+                content_html = "<p><em>Error al leer el archivo.</em></p>"
 
     return render(request, "docs.html", {
         "file_list": file_list,
         "selected": selected,
-        "content": content,
-        "is_admin": is_admin,
+        "content_html": content_html,
     })
 
