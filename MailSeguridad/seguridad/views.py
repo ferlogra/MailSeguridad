@@ -996,3 +996,74 @@ def docs_view(request: HttpRequest) -> HttpResponse:
         "content_html": content_html,
     })
 
+
+@login_required
+def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
+    """Show mensajes with their related actuaciones (flat LEFT JOIN)."""
+    search = request.GET.get("q", "").strip()
+    sort = request.GET.get("sort", "").strip()
+    page_num = request.GET.get("page", "1")
+
+    sql = """
+        SELECT m.*,
+               a.IdActuacion AS act_id,
+               t.Breve AS act_tipo,
+               a.FechaHora AS act_fecha,
+               a.Breve AS act_breve,
+               a.Amplio AS act_amplio,
+               a.Cierra AS act_cierra,
+               u.username AS act_user
+        FROM Mensajes m
+        LEFT JOIN Actuaciones a ON m.InternetMessageId = a.Mensaje
+        LEFT JOIN TipoActuaciones t ON a.IdTipoActuacion = t.IdTipoActuacion
+        LEFT JOIN seguridad_user u ON a.IdUser = u.id
+    """
+
+    params = []
+    if search:
+        sql += """ WHERE (
+            m.ID_principal LIKE ? OR m.Asunto_resumen LIKE ? OR m.Familia LIKE ?
+            OR m.Grupo LIKE ? OR m.Remitente_ultimo LIKE ? OR m.Estado LIKE ?
+            OR m.Revision LIKE ? OR m."To" LIKE ? OR m."Cc" LIKE ? OR m."User" LIKE ?
+            OR m.InternetMessageId LIKE ? OR m.CS_relacionado LIKE ?
+            OR a.Breve LIKE ? OR t.Breve LIKE ? OR u.username LIKE ?
+        )"""
+        like = f"%{search}%"
+        params = [like] * 15
+
+    allowed_sorts = {
+        "id": "m.Id", "familia": "m.Familia", "id_principal": "m.ID_principal",
+        "grupo": "m.Grupo", "asunto_resumen": "m.Asunto_resumen",
+        "estado": "m.Estado", "remitente_ultimo": "m.Remitente_ultimo",
+        "ultimo_email": "m.Ultimo_email_2026", "revision": "m.Revision",
+        "num_mensajes": "m.Num_Mensajes", "internet_message_id": "m.InternetMessageId",
+        "act_tipo": "t.Breve", "act_fecha": "a.FechaHora",
+        "act_breve": "a.Breve", "act_cierra": "a.Cierra", "act_user": "u.username",
+    }
+    sort_col = allowed_sorts.get(sort, "m.Id")
+    sort_dir = "DESC" if request.GET.get("desc") else "ASC"
+    sql += f" ORDER BY {sort_col} {sort_dir}"
+
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        columns = [col[0] for col in cursor.description]
+        all_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(all_rows, 50)
+    page = paginator.get_page(page_num)
+
+    import urllib.parse
+    params_qs = request.GET.copy()
+    params_qs.pop("page", None)
+    base_qs = params_qs.urlencode()
+
+    return render(request, "actuaciones_tickets.html", {
+        "page": page,
+        "search": search,
+        "sort": sort,
+        "base_query_string": base_qs,
+        "app_version": __import__("MailSeguridad.version", fromlist=["VERSION"]).VERSION,
+    })
+

@@ -22,6 +22,7 @@ urlpatterns = [
     path("mensajes/", include("seguridad.urls")),
     path("tipoactuaciones/", include("seguridad.urls_tipoactuaciones")),
     path("actuaciones/", include("seguridad.urls_actuaciones")),
+    path("actuaciones-tickets/", views.actuaciones_tickets_view, name="actuaciones_tickets"),
     path("config-tabla/", include("seguridad.urls_table_config")),
     path("menu/", views.menu_view, name="menu"),
     path("mensajes/borrar-todos/", views.clear_mensajes_view, name="clear_mensajes"),

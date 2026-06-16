@@ -288,6 +288,11 @@ td .urls-cell { white-space: pre-line; font-size: 0.75rem; max-width: 200px; ove
   font-weight: 600;
   color: var(--color-text);
 }
+.pagination-info {
+  font-size: 0.85rem;
+  color: var(--color-text-dim);
+  padding: 0 0.5rem;
+}
 
 /* ── Detail view ────────────────────────────────── */
 .detail-grid {
