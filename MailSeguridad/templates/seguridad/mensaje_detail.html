@@ -30,6 +30,8 @@
         <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="6">{{ mensaje|dict_key:fld|default:'' }}</textarea>
       {% elif fld == 'to' or fld == 'cc' %}
         <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="2">{{ mensaje|dict_key:fld|default:'' }}</textarea>
+      {% elif fld == 'internet_message_headers' %}
+        <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="8">{{ mensaje|dict_key:fld|default:'' }}</textarea>
       {% elif fld == 'asunto_resumen' %}
         <input type="text" id="id_{{ fld }}" name="{{ fld }}"
                class="field" value="{{ mensaje|dict_key:fld|default:'' }}">

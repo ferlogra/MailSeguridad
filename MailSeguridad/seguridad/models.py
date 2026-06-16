@@ -120,6 +120,7 @@ class Mensaje(models.Model):
     is_body_html = models.BooleanField(null=True, blank=True, db_column="IsBodyHTML")
     to = models.TextField(null=True, blank=True, db_column="To")
     cc = models.TextField(null=True, blank=True, db_column="Cc")
+    internet_message_headers = models.TextField(null=True, blank=True, db_column="InternetMessageHeaders")
     user = models.TextField(null=True, blank=True, db_column="User")
 
     class Meta:

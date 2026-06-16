@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
 Genera un Excel de tickets (INC/CS/CRQ/SOAR) a partir de correos de Outlook en la carpeta Bandeja de entrada.
@@ -165,7 +165,7 @@ begin {
 #     [datetime]$fechaInicio
 # )
 
-    $version= "1.9"
+    $version= "2.1"
 
     function Write-Log {
         param(
@@ -458,64 +458,80 @@ begin {
         $fromAddress = $null
         $fromName    = $null
 
-        if ($Message.From -and $Message.From.EmailAddress) {
-            $fromAddress = $Message.From.EmailAddress.Address
-            $fromName    = $Message.From.EmailAddress.Name
+        # Para evitar errores de recuperar mensajes vacios
+        $messageId = [string]$Message.Id
+        $messageId = $messageId.Trim()
+        $null = Get-MgUserMessage -UserId $UserId -MessageId $Message.Id -ErrorAction SilentlyContinue
+
+		# $Mess= Get-MgUserMessage -UserId $UserId -MessageId $messageId -Property "id,ReceivedDateTime,subject,from,toRecipients,ccRecipients,bccRecipients,body,BodyPreview,WebLink,InternetMessageId,ConversationId,In-Reply-To,References,InternetMessageHeaders"
+        # $Mess= Get-MgUserMessage -UserId $UserId -MessageId $messageId -Property "id,ReceivedDateTime,subject,from,toRecipients,ccRecipients,bccRecipients,body,BodyPreview,WebLink,InternetMessageId,ConversationId,In-Reply-To,References"
+        # $Mess= Get-MgUserMessage -UserId $UserId -MessageId $messageId -Property "id,ReceivedDateTime,subject,from,toRecipients,ccRecipients,bccRecipients,body,BodyPreview,WebLink,InternetMessageId,ConversationId" # OK
+        $Mess= Get-MgUserMessage -UserId $UserId -MessageId $messageId -Property "id,ReceivedDateTime,subject,from,toRecipients,ccRecipients,bccRecipients,body,BodyPreview,WebLink,InternetMessageId,ConversationId,InternetMessageHeaders" # OK
+        if( [string]::IsNullOrWhiteSpace($Mess.Id)) {
+            Write-log "ID vacio" "WARN"
         }
-        elseif ($Message.Sender -and $Message.Sender.EmailAddress) {
-            $fromAddress = $Message.Sender.EmailAddress.Address
-            $fromName    = $Message.Sender.EmailAddress.Name
+        if( $Mess.Id -contains "AAMkADkxNWI4MDc3LTgzYWMtNGEzOC04MzAwLThmYWNhODIwZjEwYQBGAAAAAADlEJekpf7iTrqq0IhysK2RBwA8caBtt%2BrHT6eiXTWY%2B2ZKAAe367XMAAA8caBtt%2BrHT6eiXTWY%2B2ZKAAxAXBSZAAA=" ) {
+            Write-log "" "DEBUG"
         }
-        elseif ($Message.SenderEmailAddress -and $Message.SenderName) {
-            $fromAddress = $Message.SenderEmailAddress
-            $fromName    = $Message.SenderName
+       
+        if ($Mess.From -and $Mess.From.EmailAddress) {
+            $fromAddress = $Mess.From.EmailAddress.Address
+            $fromName    = $Mess.From.EmailAddress.Name
+        }
+        elseif ($Mess.Sender -and $Mess.Sender.EmailAddress) {
+            $fromAddress = $Mess.Sender.EmailAddress.Address
+            $fromName    = $Mess.Sender.EmailAddress.Name
+        }
+        elseif ($Mess.SenderEmailAddress -and $Mess.SenderName) {
+            $fromAddress = $Mess.SenderEmailAddress
+            $fromName    = $Mess.SenderName
         }
        
 
         $bodyText = ""
-        if ($Message.Body -and $Message.Body.Content) {
-            $bodyText = $Message.Body.Content
+        if ($Mess.Body -and $Mess.Body.Content) {
+            $bodyText = $Mess.Body.Content
         }
-        elseif ($Message.BodyPreview) {
-            $bodyText = $Message.BodyPreview
+        elseif ($Mess.BodyPreview) {
+            $bodyText = $Mess.BodyPreview
         }
-        elseif ($Message.Body) {
-            $bodyText = $Message.Body
+        elseif ($Mess.Body) {
+            $bodyText = $Mess.Body
         }
 
         # Limpieza ligera de HTML básica si viniese contenido HTML
         $bodyText = $bodyText -replace '<[^>]+>', ' '
         $bodyText = $bodyText -replace '\s+', ' '
 
-        if( -not ($Message.Id) ) {
-           $Id = $Message.EntryID
+        if( -not ($Mess.Id) ) {
+           $Id = $Mess.EntryID
         } else {
-           $Id = $Message.Id
+           $Id = $Mess.Id
         }
 
 
         $outlookUrl = ""
-        if ($Message.WebLink) {
-            $outlookUrl = $Message.WebLink
+        if ($Mess.WebLink) {
+            $outlookUrl = $Mess.WebLink
         }
-        elseif (-not $UseGraphWebLinkOnly -and $Message.Id) {
+        elseif (-not $UseGraphWebLinkOnly -and $Mess.Id) {
             # Fallback pr�ctico si Graph no devuelve webLink.
             # No se garantiza que sobreviva a movimientos entre carpetas.
             $encodedId = [System.Uri]::EscapeDataString($Id)
             $outlookUrl = "https://outlook.office.com/mail/deeplink/read/$encodedId?ItemID=$encodedId&exvsurl=1"
         }
-        if( $Message.ReceivedDateTime ) {
-            $Received = $Message.ReceivedDateTime
+        if( $Mess.ReceivedDateTime ) {
+            $Received = $Mess.ReceivedDateTime
         } else {
-            $Received = $Message.ReceivedTime
+            $Received = $Mess.ReceivedTime
         }
         $grupo = ""
         $filtro = ""
 
         # Destinatarios To
         $toList = @()
-        if ($Message.ToRecipients) {
-            foreach ($r in $Message.ToRecipients) {
+        if ($Mess.ToRecipients) {
+            foreach ($r in $Mess.ToRecipients) {
                 $addr = if ($r.EmailAddress -and $r.EmailAddress.Address) { $r.EmailAddress.Address } else { "" }
                 $name = if ($r.EmailAddress -and $r.EmailAddress.Name) { $r.EmailAddress.Name } else { "" }
                 if ($name -and $addr) { $toList += "$name <$addr>" }
@@ -526,8 +542,8 @@ begin {
 
         # Destinatarios CC
         $ccList = @()
-        if ($Message.CcRecipients) {
-            foreach ($r in $Message.CcRecipients) {
+        if ($Mess.CcRecipients) {
+            foreach ($r in $Mess.CcRecipients) {
                 $addr = if ($r.EmailAddress -and $r.EmailAddress.Address) { $r.EmailAddress.Address } else { "" }
                 $name = if ($r.EmailAddress -and $r.EmailAddress.Name) { $r.EmailAddress.Name } else { "" }
                 if ($name -and $addr) { $ccList += "$name <$addr>" }
@@ -538,18 +554,27 @@ begin {
 
         # ¿El cuerpo del mensaje es HTML?
         $isHtml = $false
-        if ($Message.Body -and $Message.Body.ContentType) {
-            $isHtml = ($Message.Body.ContentType -eq "HTML")
+        if ($Mess.Body -and $Mess.Body.ContentType) {
+            $isHtml = ($Mess.Body.ContentType -eq "HTML")
         }
 
+        # if( ( -not ($Mess.Id.Trim() ) ) -or ( -not ( $toStr.Trim() ) ) -or ( -not ( $ccStr.Trim() ) ) )  {
+        if( ( [string]::IsNullOrWhiteSpace($Mess.Id) ) -or ( [string]::IsNullOrWhiteSpace($toStr) ) )   {
+            if( [string]::IsNullOrWhiteSpace($Mess.Id) ) { Write-log "ID vacio" "WARN" }
+            if( [string]::IsNullOrWhiteSpace($toStr) ) { Write-log "TO vacio en mensaje $($Mess.Id)" "WARN" }
+            # if( [string]::IsNullOrWhiteSpace($ccStr) ) { Write-log "CC vacio en mensaje $($Mess.Id)" "WARN" }
+        }
+
+        # $Ref= $Mess.References
+        $headers = $Mess.InternetMessageHeaders
         [pscustomobject]@{
-            Id                = [string]$Message.Id
+            Id                = [string]$Mess.Id
             MessageId         = [string]$Id
-            InternetMessageId = [string]$Message.InternetMessageId
-            ConversationId    = [string]$Message.ConversationId
-            Subject           = [string]$Message.Subject
+            InternetMessageId = [string]$Mess.InternetMessageId
+            ConversationId    = [string]$Mess.ConversationId
+            Subject           = [string]$Mess.Subject
             ReceivedDateTime  = [datetime]$Received
-            SentDateTime      = if ($Message.SentDateTime) { [datetime]$Message.SentDateTime } else { $null }
+            SentDateTime      = if ($Mess.SentDateTime) { [datetime]$Mess.SentDateTime } else { $null }
             From              = [string]$fromAddress
             FromName          = [string]$fromName
             To                = $toStr
@@ -557,11 +582,13 @@ begin {
             Body              = [string]$bodyText
             IsBodyHTML        = $isHtml
             FolderName        = [string]$FolderDisplayName
-            ParentFolderId    = [string]$Message.ParentFolderId
+            ParentFolderId    = [string]$Mess.ParentFolderId
             OutlookUrl        = [string]$outlookUrl
             Grupo             = [string]$grupo
             Filtro            = [string]$filtro
             Revision          = [string]$Revision
+            InternetMessageHeaders = $headers
+            # References        = [string]$Ref
         }
     }
 
@@ -644,7 +671,8 @@ begin {
             "isRead",
             "toRecipients",
             "ccRecipients",
-            "uniqueBody"
+            "uniqueBody",
+            "internetMessageHeaders"
         )
 
         $graphDate = $ReceivedAfter.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -990,6 +1018,7 @@ begin {
                 To                 = $latest.To
                 Cc                 = $latest.Cc
                 User               = $UserPrincipalName
+                InternetMessageHeaders = $latest.InternetMessageHeaders
             }
         }
 
@@ -1050,6 +1079,7 @@ begin {
                     To                 = ""
                     Cc                 = ""
                     User               = ""
+                    InternetMessageHeaders = ""
                 }
             )
         }
@@ -1113,7 +1143,8 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     IsBodyHTML        INTEGER NOT NULL DEFAULT 0,
     "To"              TEXT,
     "Cc"              TEXT,
-    "User"            TEXT
+    "User"            TEXT,
+    InternetMessageHeaders TEXT
 )
 "@
         Invoke-SqliteQuery -DataSource $DatabasePath -Query $createTable
@@ -1125,13 +1156,13 @@ INSERT INTO Mensajes (
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
     Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion,
-    Body, IsBodyHTML, "To", "Cc", "User"
+    Body, IsBodyHTML, "To", "Cc", "User", InternetMessageHeaders
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
     @Ventana_o_fecha, @Ultimo_email_2026, @Remitente_ultimo,
     @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion,
-    @Body, @IsBodyHTML, @To, @Cc, @User
+    @Body, @IsBodyHTML, @To, @Cc, @User, @InternetMessageHeaders
 )
 "@
 
@@ -1161,6 +1192,7 @@ INSERT INTO Mensajes (
                 To              = if ($row.To)              { [string]$row.To }              else { '' }
                 Cc              = if ($row.Cc)              { [string]$row.Cc }              else { '' }
                 User            = if ($row.User)            { [string]$row.User }            else { '' }
+                InternetMessageHeaders = if ($row.InternetMessageHeaders) { ($row.InternetMessageHeaders | ForEach-Object { "$($_.name): $($_.value)" }) -join "`n" } else { '' }
             }
             $count++
         }
@@ -1540,7 +1572,8 @@ INSERT INTO Mensajes (
     $FilteredMails = @()
 
     foreach ($mail in $rawMessages) {
-        $mail2 = Normalize-Message -Message $mail -FolderDisplayName $MailFolderName -Revision $revisionTimestamp
+		$mail2 = Normalize-Message -Message $mail -FolderDisplayName $MailFolderName -Revision $revisionTimestamp
+        # $mail2 = Normalize-Message -Message $mail -FolderDisplayName $MailFolderName -Revision $revisionTimestamp
         # $received = $mail2.ReceivedTime
         $received = $mail2.receivedDateTime
         $Filtro = ""

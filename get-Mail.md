@@ -118,6 +118,7 @@ Si la BBDD no existe, se crea junto con la tabla. Si ya existe, los nuevos regis
 | `IsBodyHTML` (v1.9+) | Indica si el body es HTML (1=Sí, 0=No) |
 | `To` (v1.9+) | Lista de destinatarios del mensaje |
 | `Cc` (v1.9+) | Lista de destinatarios en copia (CC) |
+| `InternetMessageHeaders` (v2.1+) | Cabeceras completas del mensaje en texto plano (formato `name: valor`) |
 | `User` (v1.8+) | UserPrincipalName del usuario que ejecutó el script |
 
 ---
@@ -197,6 +198,16 @@ Los filtros están definidos en el array `$Filters` dentro del script. Cada filt
 ---
 
 ## Changelog
+
+### v2.1 (2026-06-16)
+**Aportaciones:**
+
+#### Nuevos campos
+- ✨ Nuevo campo `InternetMessageHeaders` (TEXT) en la tabla `Mensajes` de SQLite. Añadido al CREATE TABLE, al INSERT y mediante ALTER TABLE a bases de datos existentes.
+- ✨ Contiene las cabeceras completas del mensaje en texto plano (`name: valor`), extraídas de `$Message.InternetMessageHeaders`.
+- ✨ Incluido también en la exportación a Excel como columna adicional.
+
+---
 
 ### v1.9 (2026-06-16)
 **Aportaciones:**

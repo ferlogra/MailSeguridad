@@ -216,6 +216,7 @@ MENSAJES_ALL_COLS: dict[str, str] = {
     "cc": "Cc",
     "body": "Cuerpo",
     "user": "Usuario",
+    "internet_message_headers": "Headers del mensaje",
 }
 
 

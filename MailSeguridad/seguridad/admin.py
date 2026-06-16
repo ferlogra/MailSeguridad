@@ -29,9 +29,9 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
 
 @admin.register(Mensaje)
 class MensajeAdmin(admin.ModelAdmin):
-    list_display = ["id", "id_principal", "familia", "grupo", "estado", "revision", "asunto_resumen", "ultimo_email"]
+    list_display = ["id", "id_principal", "familia", "grupo", "estado", "revision", "asunto_resumen", "ultimo_email", "internet_message_headers"]
     list_filter = ["familia", "grupo", "estado", "revision"]
-    search_fields = ["id_principal", "asunto_resumen", "familia", "remitente_ultimo"]
+    search_fields = ["id_principal", "asunto_resumen", "familia", "remitente_ultimo", "internet_message_headers"]
     list_per_page = 50
 
 
