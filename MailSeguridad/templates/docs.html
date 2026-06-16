@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}MailSeguridad — Documentación{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Documentación</h1>
+</div>
+
+<div class="card" style="margin-bottom:1rem;">
+  <form method="get" action="{% url 'docs' %}" style="display:flex;align-items:center;gap:0.75rem;">
+    <label for="file-select" style="font-weight:600;white-space:nowrap;">Seleccionar archivo:</label>
+    <select id="file-select" name="file" onchange="this.form.submit()" class="field" style="flex:1;max-width:500px;">
+      <option value="">— Seleccionar —</option>
+      {% for f in file_list %}
+      <option value="{{ f.name }}"{% if f.name == selected %} selected{% endif %}>{{ f.name }}</option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit" class="btn btn-primary">Ir</button></noscript>
+  </form>
+</div>
+
+{% if content %}
+<div class="card markdown-body" id="md-content"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+(function() {
+  var raw = {{ content|escapejs }};
+  var el = document.getElementById('md-content');
+  if (typeof marked !== 'undefined') {
+    el.innerHTML = marked.parse(raw);
+  } else {
+    el.textContent = raw;
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

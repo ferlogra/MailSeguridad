@@ -30,6 +30,7 @@
         <nav class="topnav" aria-label="Principal">
           <a href="{% url 'menu' %}">Menú</a>
           <a href="{% url 'mensajes_list' %}">Mensajes</a>
+          <a href="{% url 'docs' %}">Docs</a>
           <a class="nav-user" href="{% url 'profile' %}">{{ user.username }}</a>
           {% if user.is_superuser or user.rol == 'administrador' %}
             <a href="{% url 'email_config' %}">Email</a>

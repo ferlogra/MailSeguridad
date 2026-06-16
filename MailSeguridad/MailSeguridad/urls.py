@@ -27,6 +27,7 @@ urlpatterns = [
     path("mensajes/borrar-todos/", views.clear_mensajes_view, name="clear_mensajes"),
     path("", views.home_view, name="home"),
     path("__health__/", views.health_view, name="health"),
+    path("docs/", views.docs_view, name="docs"),
 ]
 
 if settings.DEBUG:

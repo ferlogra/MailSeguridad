@@ -961,3 +961,37 @@ def actuacion_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "is_admin": is_admin,
     })
 
+
+@login_required
+def docs_view(request: HttpRequest) -> HttpResponse:
+    """View documentation markdown files from the project directories."""
+    import os, glob
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    md_files = sorted(glob.glob(os.path.join(project_root, "**", "*.md"), recursive=True))
+
+    file_list = []
+    for fp in md_files:
+        rel = os.path.relpath(fp, project_root)
+        file_list.append({"path": fp, "name": rel})
+
+    selected = request.GET.get("file", "")
+    content = ""
+    if selected:
+        matched = [f for f in md_files if os.path.relpath(f, project_root) == selected]
+        if matched:
+            try:
+                with open(matched[0], "r", encoding="utf-8") as fh:
+                    content = fh.read()
+            except Exception:
+                content = "*Error al leer el archivo.*"
+
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+
+    return render(request, "docs.html", {
+        "file_list": file_list,
+        "selected": selected,
+        "content": content,
+        "is_admin": is_admin,
+    })
+
