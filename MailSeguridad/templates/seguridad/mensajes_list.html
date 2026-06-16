@@ -10,11 +10,63 @@
 </div>
 
 <form class="search-form" method="get">
-  <input type="search" name="q" placeholder="Buscar por ID, asunto, familia, grupo, remitente o estado…" value="{{ search }}">
-  <button type="submit">Buscar</button>
-  {% if search %}
-    <a href="{% url 'mensajes_list' %}" class="btn btn-secondary">Limpiar</a>
-  {% endif %}
+  <div class="filter-row">
+    <input type="search" name="q" placeholder="Buscar por ID, asunto, familia, grupo, remitente o estado…" value="{{ search }}" style="flex:2;min-width:200px;">
+    <div class="filter-group">
+      <label>Fecha</label>
+      <input type="date" name="fecha_desde" value="{{ fecha_desde }}" style="font-size:0.8rem;">
+      <label style="font-size:0.8rem;">a</label>
+      <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" style="font-size:0.8rem;">
+    </div>
+  </div>
+  <div class="filter-row">
+    <div class="filter-group">
+      <label>Familia</label>
+      <select name="familia">
+        <option value="">— Todas —</option>
+        {% for f in familias %}
+          <option value="{{ f }}"{% if familia == f %} selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Grupo</label>
+      <select name="grupo">
+        <option value="">— Todos —</option>
+        {% for g in grupos %}
+          <option value="{{ g }}"{% if grupo == g %} selected{% endif %}>{{ g }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Estado</label>
+      <select name="estado">
+        <option value="">— Todos —</option>
+        {% for e in estados %}
+          <option value="{{ e }}"{% if estado == e %} selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Revisión</label>
+      <select name="revision">
+        <option value="">— Todas —</option>
+        {% for r in revisiones %}
+          <option value="{{ r }}"{% if revision == r %} selected{% endif %}>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Remitente</label>
+      <input type="text" name="remitente_ultimo" placeholder="Contiene…" value="{{ remitente_ultimo }}" style="font-size:0.8rem;">
+    </div>
+    <div class="filter-actions" style="display:flex;align-items:flex-end;gap:0.5rem;">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+      {% if search or familia or grupo or estado or revision or remitente_ultimo or fecha_desde or fecha_hasta %}
+        <a href="{% url 'mensajes_list' %}" class="btn btn-secondary" style="font-size:0.8rem;">Limpiar</a>
+      {% endif %}
+    </div>
+  </div>
 </form>
 
 {% if mensajes %}
@@ -112,13 +164,13 @@
 {% if is_paginated %}
 <nav class="pagination">
   {% if page_obj.has_previous %}
-    <a href="?page=1{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&laquo;</a>
-    <a href="?page={{ page_obj.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&lsaquo;</a>
+    <a href="?{% preserve_params page=1 %}">&laquo;</a>
+    <a href="?{% preserve_params page=page_obj.previous_page_number %}">&lsaquo;</a>
   {% endif %}
   <span class="current">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&rsaquo;</a>
-    <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&raquo;</a>
+    <a href="?{% preserve_params page=page_obj.next_page_number %}">&rsaquo;</a>
+    <a href="?{% preserve_params page=page_obj.paginator.num_pages %}">&raquo;</a>
   {% endif %}
 </nav>
 {% endif %}

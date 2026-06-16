@@ -15,6 +15,7 @@
     {% endfor %}
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Guardar</button>
+      <a href="{% url 'password_change' %}" class="btn btn-secondary">Cambiar contrasena</a>
       <a href="{% url 'menu' %}" class="btn btn-secondary">Cancelar</a>
     </div>
   </form>

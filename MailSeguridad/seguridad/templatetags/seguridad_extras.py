@@ -55,3 +55,24 @@ def render_links(value):
     from seguridad.table_manager import render_hyperlinks
 
     return mark_safe(render_hyperlinks(str(value)))
+
+
+@register.simple_tag(takes_context=True)
+def preserve_params(context, **overrides):
+    """Build a query string preserving all current GET params,
+    with specific overrides or removals.
+
+    Usage:
+        <a href="?{% preserve_params page=1 %}">next</a>
+        <a href="?{% preserve_params page=None %}">remove page</a>
+    """
+    request = context.get("request")
+    if not request:
+        return ""
+    params = request.GET.copy()
+    for key, value in overrides.items():
+        if value is None:
+            params.pop(key, None)
+        else:
+            params[key] = str(value)
+    return params.urlencode()

@@ -18,6 +18,7 @@ from django.views.decorators.http import require_http_methods
 
 from .email_config import EmailSettings
 from .forms import (
+    CustomPasswordChangeForm,
     EmailConfigForm,
     PasswordResetForm,
     PasswordResetRequestForm,
@@ -316,6 +317,23 @@ def profile_view(request: HttpRequest) -> HttpResponse:
     return render(request, "seguridad/profile_form.html", {"form": form})
 
 
+@login_required
+@require_http_methods(["GET", "POST"])
+def password_change_view(request: HttpRequest) -> HttpResponse:
+    user = cast(Any, request).user
+    if request.method == "POST":
+        form = CustomPasswordChangeForm(request.POST, user=user)
+        if form.is_valid():
+            user.set_password(form.cleaned_data["new_password1"])
+            user.save()
+            messages.success(request, "Contrasena cambiada correctamente.")
+            return redirect("profile")
+        return render(request, "seguridad/password_change_form.html", {"form": form})
+
+    form = CustomPasswordChangeForm(user=user)
+    return render(request, "seguridad/password_change_form.html", {"form": form})
+
+
 # ── Email configuration (admin only) ─────────────────────────────
 
 
@@ -377,9 +395,20 @@ def email_config_view(request: HttpRequest) -> HttpResponse:
 def mensajes_list_view(request: HttpRequest) -> HttpResponse:
     user = cast(Any, request).user
 
-    # ── Search ────────────────────────────────────────────────
+    # ── Extract filters ──
     search = request.GET.get("q", "").strip()
+    familia = request.GET.get("familia", "").strip()
+    grupo_val = request.GET.get("grupo", "").strip()  # avoid shadowing model name
+    remitente_ultimo = request.GET.get("remitente_ultimo", "").strip()
+    estado = request.GET.get("estado", "").strip()
+    revision = request.GET.get("revision", "").strip()
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+
+    # ── Base queryset ──
     qs = Mensaje.objects.all()
+
+    # ── Full-text search (OR) ──
     if search:
         qs = qs.filter(
             Q(id_principal__icontains=search)
@@ -391,9 +420,54 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
             | Q(revision__icontains=search)
         )
 
-    # ── Table config ──────────────────────────────────────────
+    # ── Advanced filters (AND) ──
+    if familia:
+        qs = qs.filter(familia__iexact=familia)
+    if grupo_val:
+        qs = qs.filter(grupo__iexact=grupo_val)
+    if remitente_ultimo:
+        qs = qs.filter(remitente_ultimo__icontains=remitente_ultimo)
+    if estado:
+        qs = qs.filter(estado__iexact=estado)
+    if revision:
+        qs = qs.filter(revision__iexact=revision)
+    if fecha_desde:
+        qs = qs.filter(ultimo_email__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(ultimo_email__lte=fecha_hasta)
+
+    # ── Distinct values for dropdowns ──
+    familias_list = (
+        Mensaje.objects.values_list("familia", flat=True)
+        .exclude(familia__isnull=True).exclude(familia="")
+        .distinct().order_by("familia")
+    )
+    grupos_list = (
+        Mensaje.objects.values_list("grupo", flat=True)
+        .exclude(grupo__isnull=True).exclude(grupo="")
+        .distinct().order_by("grupo")
+    )
+    estados_list = (
+        Mensaje.objects.values_list("estado", flat=True)
+        .exclude(estado__isnull=True).exclude(estado="")
+        .distinct().order_by("estado")
+    )
+    revisiones_list = (
+        Mensaje.objects.values_list("revision", flat=True)
+        .exclude(revision__isnull=True).exclude(revision="")
+        .distinct().order_by("revision")
+    )
+
+    # ── Build base query string (preserve filters for sort/pagination) ──
+    import urllib.parse
+    params = request.GET.copy()
+    params.pop("page", None)
+    params.pop("sort", None)
+    base_query_string = params.urlencode()
+
+    # ── Table config ──
     cfg = tables["mensajes_list"]
-    table_ctx = build_table_context(request, user, cfg)
+    table_ctx = build_table_context(request, user, cfg, base_query_string=base_query_string)
     sort_spec = table_ctx["sort_spec"]
     if sort_spec:
         order = [
@@ -404,14 +478,19 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
     else:
         qs = qs.order_by("-ultimo_email")
 
-    # ── Pagination ────────────────────────────────────────────
-    mensajes, page_obj, is_paginated = paginate_queryset(
-        request, qs, cfg.paginate_by
-    )
+    # ── Pagination ──
+    mensajes, page_obj, is_paginated = paginate_queryset(request, qs, cfg.paginate_by)
 
     return render(request, "seguridad/mensajes_list.html", {
         "mensajes": mensajes,
         "search": search,
+        "familia": familia, "grupo": grupo_val,
+        "remitente_ultimo": remitente_ultimo,
+        "estado": estado, "revision": revision,
+        "fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta,
+        "familias": familias_list, "grupos": grupos_list,
+        "estados": estados_list, "revisiones": revisiones_list,
+        "base_query_string": base_query_string,
         "page_obj": page_obj,
         "is_paginated": is_paginated,
         **table_ctx,

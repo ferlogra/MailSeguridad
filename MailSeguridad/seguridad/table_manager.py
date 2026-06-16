@@ -74,10 +74,22 @@ class SortInfo:
 
 
 def build_sort_info(
-    field: str, label: str, current_sort_raw: str, sort_fields: list[str]
+    field: str, label: str, current_sort_raw: str, sort_fields: list[str],
+    base_query_string: str = "",
 ) -> SortInfo:
-    """Build SortInfo for one column given the current multi-column sort string."""
+    """Build SortInfo for one column given the current multi-column sort string.
+
+    If *base_query_string* is provided, it is prepended to every sort href so
+    that active filters are preserved across sort interactions.
+    """
     spec = _parse_sort(current_sort_raw, sort_fields)
+
+    def _href(sort_val: str = "") -> str:
+        if not sort_val:
+            return f"?{base_query_string}" if base_query_string else "?"
+        if base_query_string:
+            return f"?{base_query_string}&sort={sort_val}"
+        return f"?sort={sort_val}"
 
     order = 0
     direction = ""
@@ -90,21 +102,21 @@ def build_sort_info(
     is_sorted = order > 0
 
     if order == 1 and direction == "asc":
-        href_toggle = f"?sort=-{field}"
+        href_toggle = _href(f"-{field}")
     elif order == 1 and direction == "desc":
-        href_toggle = "?"
+        href_toggle = _href("")
     else:
-        href_toggle = f"?sort={field}"
+        href_toggle = _href(field)
 
     if is_sorted:
         new_spec = [dict(s) for s in spec]
         for s in new_spec:
             if s["field"] == field:
                 s["direction"] = "desc" if s["direction"] == "asc" else "asc"
-        href_ctrl = f"?sort={_spec_to_url(new_spec)}"
+        href_ctrl = _href(_spec_to_url(new_spec))
     else:
-        href_ctrl = (
-            f"?sort={_spec_to_url(spec + [{'field': field, 'direction': 'asc'}])}"
+        href_ctrl = _href(
+            _spec_to_url(spec + [{"field": field, "direction": "asc"}])
         )
 
     if is_sorted:
@@ -112,10 +124,10 @@ def build_sort_info(
         for s in new_spec:
             if s["field"] == field:
                 s["direction"] = "desc" if s["direction"] == "asc" else "asc"
-        href_ctrl_shift = f"?sort={_spec_to_url(new_spec)}"
+        href_ctrl_shift = _href(_spec_to_url(new_spec))
     else:
-        href_ctrl_shift = (
-            f"?sort={_spec_to_url(spec + [{'field': field, 'direction': 'desc'}])}"
+        href_ctrl_shift = _href(
+            _spec_to_url(spec + [{"field": field, "direction": "desc"}])
         )
 
     return SortInfo(
@@ -318,6 +330,7 @@ def build_table_context(
     request: HttpRequest,
     user: Any,
     cfg: TableView,
+    base_query_string: str = "",
 ) -> dict[str, Any]:
     """Build the template context dict for a table-managed view.
 
@@ -335,7 +348,8 @@ def build_table_context(
 
     sort_info = {
         fld: build_sort_info(
-            fld, cfg.sort_labels.get(fld, fld), current_sort_raw, cfg.sort_fields
+            fld, cfg.sort_labels.get(fld, fld), current_sort_raw, cfg.sort_fields,
+            base_query_string=base_query_string,
         )
         for fld in cfg.sort_fields
     }

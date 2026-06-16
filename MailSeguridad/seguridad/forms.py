@@ -104,6 +104,50 @@ class PasswordResetForm(forms.Form):
         return cleaned_data
 
 
+class CustomPasswordChangeForm(forms.Form):
+    """Formulario para cambiar la contrasena de un usuario autenticado."""
+
+    old_password = forms.CharField(
+        label="Contrasena actual",
+        widget=forms.PasswordInput(attrs={"class": "field", "autocomplete": "current-password"}),
+    )
+    new_password1 = forms.CharField(
+        label="Nueva contrasena",
+        help_text=password_validation.password_validators_help_text_html(),
+        widget=forms.PasswordInput(attrs={"class": "field", "autocomplete": "new-password"}),
+    )
+    new_password2 = forms.CharField(
+        label="Repite la nueva contrasena",
+        widget=forms.PasswordInput(attrs={"class": "field", "autocomplete": "new-password"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "field")
+
+    def clean_old_password(self):
+        old = self.cleaned_data["old_password"]
+        if self.user and not self.user.check_password(old):
+            raise forms.ValidationError("La contrasena actual no es correcta.")
+        return old
+
+    def clean_new_password1(self):
+        p1 = self.cleaned_data["new_password1"]
+        if self.user:
+            password_validation.validate_password(p1, user=self.user)
+        return p1
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get("new_password1")
+        p2 = cleaned.get("new_password2")
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError("Las contrasenas no coinciden.")
+        return cleaned
+
+
 class EmailConfigForm(forms.Form):
     """Form backed by EmailSettings (JSON file)."""
 
