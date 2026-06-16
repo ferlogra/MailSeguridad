@@ -587,6 +587,7 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
             "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
             "crq_asociado", "ventana_o_fecha", "ultimo_email",
             "remitente_ultimo", "message_ids", "outlook_urls", "revision",
+            "body", "to", "cc", "user",
         ]
         for fld in text_fields:
             val = request.POST.get(fld, "").strip()
@@ -597,6 +598,9 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
 
         act_val = request.POST.get("id_actuacion", "").strip()
         mensaje.id_actuacion = int(act_val) if act_val else 0
+
+        # Boolean field
+        mensaje.is_body_html = request.POST.get("is_body_html") == "on"
 
         mensaje.save()
         messages.success(request, f"Mensaje {pk} actualizado correctamente.")
@@ -614,7 +618,7 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
         "crq_asociado", "ventana_o_fecha", "ultimo_email",
         "remitente_ultimo", "num_mensajes", "message_ids", "outlook_urls",
-        "revision", "id_actuacion",
+        "revision", "id_actuacion", "body", "is_body_html", "to", "cc", "user",
     ]
     user = cast(Any, request).user
     is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR

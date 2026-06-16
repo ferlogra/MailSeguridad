@@ -1,6 +1,6 @@
 # get-Mail.ps1
 
-**Versión actual:** 1.8  
+**Versión actual:** 1.9  
 **Última actualización:** 2026-06-16  
 **Requiere:** PowerShell 5.1+
 
@@ -115,6 +115,9 @@ Si la BBDD no existe, se crea junto con la tabla. Si ya existe, los nuevos regis
 | `Revision` (v1.5+) | Timestamp de la ejecución (formato `AAAAMMDD-HHmmss`) |
 | `IdActuacion` (v1.7+) | ID de actuación (entero, editable desde la web, por defecto 0) |
 | `Body` (v1.8+) | Cuerpo completo del mensaje de correo |
+| `IsBodyHTML` (v1.9+) | Indica si el body es HTML (1=Sí, 0=No) |
+| `To` (v1.9+) | Lista de destinatarios del mensaje |
+| `Cc` (v1.9+) | Lista de destinatarios en copia (CC) |
 | `User` (v1.8+) | UserPrincipalName del usuario que ejecutó el script |
 
 ---
@@ -194,6 +197,17 @@ Los filtros están definidos en el array `$Filters` dentro del script. Cada filt
 ---
 
 ## Changelog
+
+### v1.9 (2026-06-16)
+**Aportaciones:**
+
+#### Nuevos campos
+- ✨ Nuevos campos `To` (TEXT), `Cc` (TEXT) e `IsBodyHTML` (INTEGER NOT NULL DEFAULT 0) en la tabla `Mensajes` de SQLite. Añadidos al CREATE TABLE, al INSERT y mediante ALTER TABLE a bases de datos existentes.
+- ✨ `To` contiene la lista de destinatarios del mensaje (extraído de `$Message.ToRecipients`).
+- ✨ `Cc` contiene la lista de destinatarios en copia (extraído de `$Message.CcRecipients`).
+- ✨ `IsBodyHTML` indica si el cuerpo del mensaje es HTML (booleano, extraído de `$Message.Body.ContentType`).
+
+---
 
 ### v1.8 (2026-06-16)
 **Aportaciones:**

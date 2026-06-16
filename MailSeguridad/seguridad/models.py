@@ -117,6 +117,9 @@ class Mensaje(models.Model):
     revision = models.TextField(null=True, blank=True, db_column="Revision")
     id_actuacion = models.IntegerField(default=0, db_column="IdActuacion")
     body = models.TextField(null=True, blank=True, db_column="Body")
+    is_body_html = models.BooleanField(null=True, blank=True, db_column="IsBodyHTML")
+    to = models.TextField(null=True, blank=True, db_column="To")
+    cc = models.TextField(null=True, blank=True, db_column="Cc")
     user = models.TextField(null=True, blank=True, db_column="User")
 
     class Meta:

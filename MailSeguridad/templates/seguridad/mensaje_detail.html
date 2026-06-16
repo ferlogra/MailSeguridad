@@ -23,8 +23,13 @@
       {% if fld == 'num_mensajes' or fld == 'id_actuacion' %}
         <input type="number" id="id_{{ fld }}" name="{{ fld }}"
                class="field" value="{{ mensaje|dict_key:fld|default:'0' }}">
-      {% elif fld == 'message_ids' or fld == 'outlook_urls' %}
-        <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="4">{{ mensaje|dict_key:fld|default:'' }}</textarea>
+      {% elif fld == 'is_body_html' %}
+        <input type="checkbox" id="id_{{ fld }}" name="{{ fld }}"
+               class="field-checkbox" {% if mensaje|dict_key:fld %}checked{% endif %}>
+      {% elif fld == 'body' or fld == 'message_ids' or fld == 'outlook_urls' %}
+        <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="6">{{ mensaje|dict_key:fld|default:'' }}</textarea>
+      {% elif fld == 'to' or fld == 'cc' %}
+        <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="2">{{ mensaje|dict_key:fld|default:'' }}</textarea>
       {% elif fld == 'asunto_resumen' %}
         <input type="text" id="id_{{ fld }}" name="{{ fld }}"
                class="field" value="{{ mensaje|dict_key:fld|default:'' }}">

@@ -165,7 +165,7 @@ begin {
 #     [datetime]$fechaInicio
 # )
 
-    $version= "1.8"
+    $version= "1.9"
 
     function Write-Log {
         param(
@@ -511,6 +511,37 @@ begin {
         }
         $grupo = ""
         $filtro = ""
+
+        # Destinatarios To
+        $toList = @()
+        if ($Message.ToRecipients) {
+            foreach ($r in $Message.ToRecipients) {
+                $addr = if ($r.EmailAddress -and $r.EmailAddress.Address) { $r.EmailAddress.Address } else { "" }
+                $name = if ($r.EmailAddress -and $r.EmailAddress.Name) { $r.EmailAddress.Name } else { "" }
+                if ($name -and $addr) { $toList += "$name <$addr>" }
+                elseif ($addr)       { $toList += $addr }
+            }
+        }
+        $toStr = $toList -join "; "
+
+        # Destinatarios CC
+        $ccList = @()
+        if ($Message.CcRecipients) {
+            foreach ($r in $Message.CcRecipients) {
+                $addr = if ($r.EmailAddress -and $r.EmailAddress.Address) { $r.EmailAddress.Address } else { "" }
+                $name = if ($r.EmailAddress -and $r.EmailAddress.Name) { $r.EmailAddress.Name } else { "" }
+                if ($name -and $addr) { $ccList += "$name <$addr>" }
+                elseif ($addr)       { $ccList += $addr }
+            }
+        }
+        $ccStr = $ccList -join "; "
+
+        # ¿El cuerpo del mensaje es HTML?
+        $isHtml = $false
+        if ($Message.Body -and $Message.Body.ContentType) {
+            $isHtml = ($Message.Body.ContentType -eq "HTML")
+        }
+
         [pscustomobject]@{
             Id                = [string]$Message.Id
             MessageId         = [string]$Id
@@ -521,7 +552,10 @@ begin {
             SentDateTime      = if ($Message.SentDateTime) { [datetime]$Message.SentDateTime } else { $null }
             From              = [string]$fromAddress
             FromName          = [string]$fromName
+            To                = $toStr
+            Cc                = $ccStr
             Body              = [string]$bodyText
+            IsBodyHTML        = $isHtml
             FolderName        = [string]$FolderDisplayName
             ParentFolderId    = [string]$Message.ParentFolderId
             OutlookUrl        = [string]$outlookUrl
@@ -949,6 +983,9 @@ begin {
                 MessageIds         = $messageIds
                 OutlookUrls        = $outlookUrls
                 Body               = [string]$latest.Body
+                IsBodyHTML         = $latest.IsBodyHTML
+                To                 = $latest.To
+                Cc                 = $latest.Cc
                 User               = $UserPrincipalName
             }
         }
@@ -1006,6 +1043,9 @@ begin {
                     MessageIds         = ""
                     OutlookUrls        = ""
                     Body               = ""
+                    IsBodyHTML         = $false
+                    To                 = ""
+                    Cc                 = ""
                     User               = ""
                 }
             )
@@ -1067,6 +1107,9 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     Revision          TEXT,
     IdActuacion       INTEGER NOT NULL DEFAULT 0,
     Body              TEXT,
+    IsBodyHTML        INTEGER NOT NULL DEFAULT 0,
+    To                TEXT,
+    Cc                TEXT,
     User              TEXT
 )
 "@
@@ -1079,13 +1122,13 @@ INSERT INTO Mensajes (
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
     Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion,
-    Body, User
+    Body, IsBodyHTML, To, Cc, User
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
     @Ventana_o_fecha, @Ultimo_email_2026, @Remitente_ultimo,
     @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion,
-    @Body, @User
+    @Body, @IsBodyHTML, @To, @Cc, @User
 )
 "@
 
@@ -1111,6 +1154,9 @@ INSERT INTO Mensajes (
                 Revision        = $revisionTimestamp
                 IdActuacion     = 0
                 Body            = if ($row.Body)            { [string]$row.Body }            else { '' }
+                IsBodyHTML      = if ($row.IsBodyHTML)      { 1 }                            else { 0 }
+                To              = if ($row.To)              { [string]$row.To }              else { '' }
+                Cc              = if ($row.Cc)              { [string]$row.Cc }              else { '' }
                 User            = if ($row.User)            { [string]$row.User }            else { '' }
             }
             $count++
