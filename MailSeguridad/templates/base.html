@@ -542,7 +542,7 @@
             done++;
             if (done === ids.length) {
               msg.textContent = 'Eliminadas ' + done + ' actuaci\u00F3n(es).';
-              loadActuaciones(currentMensajeId);
+              loadActuaciones(currentMensajeInternetId);
             }
           })
           .catch(function(err) { msg.textContent = 'Error: ' + err; });
@@ -592,7 +592,7 @@
       .then(function() {
         msg.textContent = 'Creada.';
         form.remove();
-        loadActuaciones(currentMensajeId);
+        loadActuaciones(currentMensajeInternetId);
       })
       .catch(function(err) { msg.textContent = 'Error: ' + err; });
     }
@@ -648,7 +648,7 @@
       .then(function() {
         msg.textContent = 'Actualizada.';
         form.remove();
-        loadActuaciones(currentMensajeId);
+        loadActuaciones(currentMensajeInternetId);
       })
       .catch(function(err) { msg.textContent = 'Error: ' + err; });
     }
