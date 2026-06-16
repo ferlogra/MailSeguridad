@@ -11,7 +11,7 @@
 
 <form class="search-form" method="get">
   <div class="filter-row">
-    <input type="search" name="q" placeholder="Buscar por ID, asunto, familia, grupo, remitente o estado…" value="{{ search }}" style="flex:2;min-width:200px;">
+    <input type="search" name="q" placeholder="Buscar por ID, asunto, familia, grupo, remitente, to, cc, usuario o estado…" value="{{ search }}" style="flex:2;min-width:200px;">
     <div class="filter-group">
       <label>Fecha</label>
       <input type="date" name="fecha_desde" value="{{ fecha_desde }}" style="font-size:0.8rem;">
@@ -144,6 +144,8 @@
               <div class="urls-cell">{{ m.outlook_urls|render_links }}</div>
             {% elif col_key == 'message_ids' %}
               <span style="font-size:0.75rem;">{{ m.message_ids|truncatechars:60 }}</span>
+            {% elif col_key == 'body' %}
+              <span style="font-size:0.75rem;">{{ m.body|truncatechars:80 }}</span>
             {% elif col_key == 'ultimo_email' %}
               {{ m.ultimo_email|render_links }}
             {% elif col_key == 'num_mensajes' %}

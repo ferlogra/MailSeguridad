@@ -418,6 +418,9 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
             | Q(remitente_ultimo__icontains=search)
             | Q(estado__icontains=search)
             | Q(revision__icontains=search)
+            | Q(to__icontains=search)
+            | Q(cc__icontains=search)
+            | Q(user__icontains=search)
         )
 
     # ── Advanced filters (AND) ──
