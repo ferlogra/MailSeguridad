@@ -1108,9 +1108,9 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     IdActuacion       INTEGER NOT NULL DEFAULT 0,
     Body              TEXT,
     IsBodyHTML        INTEGER NOT NULL DEFAULT 0,
-    To                TEXT,
-    Cc                TEXT,
-    User              TEXT
+    "To"              TEXT,
+    "Cc"              TEXT,
+    "User"            TEXT
 )
 "@
         Invoke-SqliteQuery -DataSource $DatabasePath -Query $createTable
@@ -1122,7 +1122,7 @@ INSERT INTO Mensajes (
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
     Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion,
-    Body, IsBodyHTML, To, Cc, User
+    Body, IsBodyHTML, "To", "Cc", "User"
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
