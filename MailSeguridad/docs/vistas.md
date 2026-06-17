@@ -82,6 +82,7 @@ Todas las vistas están definidas en `seguridad/views.py`. Salvo `home_view` y `
 - Vista principal del sistema. Muestra la tabla de mensajes con:
   - **Búsqueda global** (`q`): busca en múltiples campos (id_principal, asunto_resumen, familia, grupo, remitente_ultimo, estado, revisión, to, cc, user, internet_message_id, cs_relacionado).
   - **Filtros avanzados**: familia, grupo, remitente, estado, revisión, fecha_desde, fecha_hasta. Los filtros avanzados se combinan con AND.
+  - **Filtro por campo** (`field` + `value`): cuando el usuario incluye `?field=to&value=x` en la URL, se añade un filtro exacto adicional. Solo los campos de una whitelist (`to`, `internet_message_id`, `conversation_id`, `cs_relacionado`, `inc_relacionado`) son aceptados. Esto permite reutilizar toda la funcionalidad del listado (column-selector, ordenación, paginación) desde los botones 🔍 del detalle de mensaje.
   - **Selectores de columna**: cada usuario puede seleccionar qué columnas mostrar y en qué orden.
   - **Ordenación multi-columna**: clic simple (asc/desc), Ctrl+clic añade columna de ordenación, Shift+clic añade en orden descendente.
   - **Paginación**: 50 registros por página.

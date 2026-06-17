@@ -53,6 +53,7 @@ Si el usuario ya existe (username o email duplicados), se muestra el error en el
   - Estado (desplegable)
   - Revisión (desplegable)
   - Fecha desde / Fecha hasta (texto, formato AAAAMMDD o similar)
+- **Filtro por campo** (`field` + `value`): cuando se accede desde un botón 🔍 del detalle de mensaje, la pantalla se abre pre-filtrada por el campo y valor seleccionados (p.ej. `?field=to&value=user@example.com`). El filtro es una whitelist de 5 campos: `to`, `internet_message_id`, `conversation_id`, `cs_relacionado`, `inc_relacionado`.
 
 ### Tabla de datos
 - Columnas seleccionables: el usuario puede elegir qué columnas mostrar y en qué orden mediante un selector.
@@ -86,8 +87,10 @@ Si el usuario ya existe (username o email duplicados), se muestra el error en el
 ## Detalle de mensaje
 
 - URL: `/mensajes/<pk>/`
-- Muestra todos los campos del mensaje en un formulario desglosado.
-- Campos editables: familia, ID principal, grupo, filtro, asunto resumen, estado, acción/tipo, INC/CS/CRQ relacionados, ventana/fecha, último email, remitente, num_mensajes, message_ids, outlook_urls, revisión, body, is_body_html, to, cc, user, headers, internet_message_id, conversation_id.
+- Muestra todos los campos del mensaje en un formulario desglosado en un grid de dos columnas.
+- Campos editables: familia, ID principal, grupo, filtro, asunto resumen, estado, acción/tipo, INC/CS/CRQ relacionados, ventana/fecha, último email, remitente, num_mensajes, message_ids, outlook_urls, revisión, is_body_html, to, cc, user, headers, internet_message_id, conversation_id.
+- **Campo "Cuerpo"**: se muestra al final ocupando las dos columnas completas (`grid-column: 1 / -1`) con un textarea de altura mínima 12rem.
+- **Botones de búsqueda por campo (🔍)**: aparecen junto a los campos `to`, `internet_message_id`, `conversation_id`, `cs_relacionado` e `inc_relacionado`. Abren en una nueva pestaña la pantalla de Mensajes completa, pre-filtrada por ese campo y valor.
 - Botones:
   - **Guardar** — persiste los cambios en la BD (el modelo Mensaje es managed=False pero permite escritura).
   - **Eliminar** — solo visible para administradores. Borra el registro.
