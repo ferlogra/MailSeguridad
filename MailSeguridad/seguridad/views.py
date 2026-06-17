@@ -27,7 +27,7 @@ from .forms import (
     SignupForm,
     VerificationForm,
 )
-from .models import Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
+from .models import AccAutoFields, AccionesAuto, Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
 
 from .table_manager import (
     _parse_sort,
