@@ -116,6 +116,15 @@ Si el usuario ya existe (username o email duplicados), se muestra el error en el
 - **Crear** (`/tipoactuaciones/nuevo/`): formulario con grupo, orden, breve (requerido), amplio, cierra.
 - **Detalle/Editar** (`/tipoactuaciones/<pk>/`): mismo formulario precargado. Incluye botón de eliminar.
 
+## Acciones automáticas
+
+- **Listado** (`/acciones-auto/`): tabla paginada con column-selector y búsqueda. Columnas: ID, Descripción, Tipo, Hijo.
+- **Crear** (`/acciones-auto/nuevo/`): formulario con descripción, tipo (Mensaje/Acción) e hijo (relación opcional con otra acción automática).
+- **Detalle/Editar** (`/acciones-auto/<pk>/`): formulario principal precargado. Incluye:
+  - Botón de eliminar (solo administradores).
+  - Sección **"Campos de condición"** con tabla de campos relacionados de `AccAutoFields` (orden, campo, condición, valor).
+  - Botones para **añadir** y **eliminar** campos de condición de forma inline.
+
 ## Documentación (Docs)
 
 - URL: `/docs/`

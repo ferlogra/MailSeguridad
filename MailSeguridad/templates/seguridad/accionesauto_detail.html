@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load seguridad_extras %}
+{% block title %}MailSeguridad — Acción automática{% if obj and obj.IDAccAuto %} #{{ obj.IDAccAuto }}{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if is_new %}Nueva acción automática{% else %}Acción automática #{{ obj.IDAccAuto }}{% endif %}</h1>
+  <a href="{% url 'accionesauto_list' %}" class="btn btn-secondary">← Volver</a>
+</div>
+
+<form method="post" class="detail-form">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="save">
+
+  {% if not is_new %}
+  <div class="detail-id-bar">
+    <span class="detail-id-label">ID</span>
+    <span class="detail-id-value">{{ obj.IDAccAuto }}</span>
+  </div>
+  {% endif %}
+
+  <div class="detail-grid">
+    <div class="detail-field">
+      <label for="id_DescAccAuto">{{ field_labels|dict_key:"DescAccAuto"|default:"Descripción" }}</label>
+      <input type="text" id="id_DescAccAuto" name="DescAccAuto" class="field" maxlength="64"
+             value="{% if obj %}{{ obj.DescAccAuto }}{% endif %}" required>
+    </div>
+    <div class="detail-field">
+      <label for="id_Tipo">{{ field_labels|dict_key:"Tipo"|default:"Tipo" }}</label>
+      <select id="id_Tipo" name="Tipo" class="field">
+        <option value="Mensaje"{% if obj and obj.Tipo == 'Mensaje' %} selected{% endif %}>Mensaje</option>
+        <option value="Accion"{% if obj and obj.Tipo == 'Accion' %} selected{% endif %}>Acción</option>
+      </select>
+    </div>
+    <div class="detail-field">
+      <label for="id_Hijo">{{ field_labels|dict_key:"Hijo"|default:"Hijo" }}</label>
+      <select id="id_Hijo" name="Hijo" class="field">
+        <option value="">— Ninguno —</option>
+        {% for p in padres %}
+          <option value="{{ p.IDAccAuto }}"{% if obj and obj.Hijo_id == p.IDAccAuto %} selected{% endif %}>
+            [{{ p.IDAccAuto }}] {{ p.DescAccAuto }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="detail-actions">
+    <button type="submit" class="btn btn-primary">{% if is_new %}➕ Crear{% else %}💾 Guardar cambios{% endif %}</button>
+    <a href="{% url 'accionesauto_list' %}" class="btn btn-secondary">Cancelar</a>
+    {% if is_admin and not is_new %}
+      <button type="submit" class="btn btn-danger" style="margin-left:auto;"
+              form="delete-form">🗑️ Eliminar</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if is_admin and not is_new %}
+<form id="delete-form" method="post" action="{% url 'accionesauto_detail' pk=obj.IDAccAuto %}"
+      onsubmit="return confirm('¿Estás seguro de eliminar la acción automática #{{ obj.IDAccAuto }}?');">
+  {% csrf_token %}
+  <input type="hidden" name="_method" value="delete">
+</form>
+{% endif %}
+
+{% if not is_new %}
+<hr style="margin:2rem 0;border:0;border-top:1px solid var(--color-border);">
+
+<div class="card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Campos de condición</h2>
+
+  {% if campos %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Orden</th>
+          <th>Campo</th>
+          <th>Condición</th>
+          <th>Valor</th>
+          <th style="width:60px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in campos %}
+        <tr>
+          <td>{{ c.Orden }}</td>
+          <td>{{ c.Field }}</td>
+          <td>{{ c.get_Cond_display }}</td>
+          <td>{{ c.Valor }}</td>
+          <td>
+            <form method="post" action="{% url 'accionesauto_detail' pk=obj.IDAccAuto %}"
+                  onsubmit="return confirm('¿Eliminar este campo?');"
+                  style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="_method" value="del_field">
+              <input type="hidden" name="field_pk" value="{{ c.IDAaccAutoField }}">
+              <button type="submit" class="btn btn-danger" style="font-size:0.75rem;padding:0.2rem 0.4rem;">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--color-text-dim);padding:0.5rem 0;">No hay campos definidos para esta acción.</p>
+  {% endif %}
+
+  <h3 style="margin-top:1.5rem;font-size:1rem;">Añadir campo</h3>
+  <form method="post" action="{% url 'accionesauto_detail' pk=obj.IDAccAuto %}" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:flex-end;">
+    {% csrf_token %}
+    <input type="hidden" name="_method" value="add_field">
+    <div>
+      <label style="display:block;font-size:0.8rem;margin-bottom:0.2rem;">Orden</label>
+      <input type="number" name="Orden" class="field" style="width:4rem;" value="{{ campos|length|add:1 }}" min="0">
+    </div>
+    <div>
+      <label style="display:block;font-size:0.8rem;margin-bottom:0.2rem;">Campo</label>
+      <input type="text" name="Field" class="field" style="width:12rem;" maxlength="128" required>
+    </div>
+    <div>
+      <label style="display:block;font-size:0.8rem;margin-bottom:0.2rem;">Condición</label>
+      <select name="Cond" class="field" style="width:10rem;">
+        <option value="EQ">Igual a</option>
+        <option value="NE">No igual a</option>
+        <option value="GT">Mayor que</option>
+        <option value="GE">Mayor o igual a</option>
+        <option value="LT">Menor que</option>
+        <option value="LE">Menor o igual que</option>
+        <option value="Contains">Contiene</option>
+        <option value="NContains">No contiene</option>
+        <option value="Like">Es como</option>
+        <option value="NLike">No es como</option>
+        <option value="Find">Aparece</option>
+        <option value="NFind">No aparece</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:0.8rem;margin-bottom:0.2rem;">Valor</label>
+      <input type="text" name="Valor" class="field" style="width:12rem;" maxlength="256" required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="font-size:0.85rem;">➕ Añadir</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

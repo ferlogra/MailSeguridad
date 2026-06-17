@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load seguridad_extras %}
+{% block title %}MailSeguridad — Acciones automáticas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Acciones automáticas</h1>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <span style="font-size:0.85rem;color:var(--color-text-dim);">{{ page_obj.paginator.count|default:records|length }} registros</span>
+    <a href="{% url 'accionesauto_create' %}" class="btn btn-primary" style="font-size:0.85rem;">+ Nueva acción</a>
+  </div>
+</div>
+
+<form class="search-form" method="get">
+  <input type="search" name="q" placeholder="Buscar por descripción o tipo…" value="{{ search }}">
+  <button type="submit">Buscar</button>
+  {% if search %}
+    <a href="{% url 'accionesauto_list' %}" class="btn btn-secondary">Limpiar</a>
+  {% endif %}
+</form>
+
+{% if records %}
+
+<div class="section-head section-head-inline">
+  <span class="current-sort" style="display:none">{{ current_sort }}</span>
+  <div class="col-selector" data-storage-key="mailseg_cols_accionesauto" data-menu-option="accionesauto_list">
+    <button class="btn btn-secondary col-selector-btn" type="button" style="font-size:0.85rem;">☰ Columnas</button>
+    <div class="col-selector-dropdown">
+      <div class="col-drag-list">
+        {% for col_key, col_label in ordered_cols.items %}
+          <label class="drag-item" draggable="true"><span class="drag-handle">⠿</span> <input type="checkbox" data-col="{{ col_key }}"{% if col_key in default_cols %} checked{% endif %}> {{ col_label }}</label>
+        {% endfor %}
+      </div>
+      <div class="col-load-configs">
+        <select class="col-config-select">
+          <option value="">— Cargar configuración —</option>
+        </select>
+        <div class="col-config-actions">
+          <button class="btn btn-secondary col-save-btn" type="button" style="font-size:0.8rem;padding:0.3rem 0.6rem;">💾 Guardar</button>
+          <button class="col-config-del-btn" type="button" title="Eliminar configuración">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        {% if row_action_url_name %}
+        <th class="col-actions-header">Ver</th>
+        {% endif %}
+        {% for col_key, col_label in ordered_cols.items %}
+          <th data-col="{{ col_key }}" class="{% if col_key not in default_cols %}col-hidden{% endif %}">
+            {% with si=sort_info|dictget:col_key %}
+              {% if si %}
+                <a class="sort-header" href="{{ si.href_toggle }}"
+                   data-href-ctrl="{{ si.href_ctrl }}"
+                   data-href-ctrl-shift="{{ si.href_ctrl_shift }}">
+                  {{ si.label }}
+                  {% if si.is_sorted %}
+                    <span class="indicator sort-active">
+                      {% if si.direction == "asc" %}▲{% else %}▼{% endif %}
+                    </span>
+                    {% if si.order > 1 %}
+                      <span class="sort-order">{{ si.order }}</span>
+                    {% endif %}
+                  {% endif %}
+                </a>
+              {% else %}
+                {{ col_label }}
+              {% endif %}
+            {% endwith %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        {% if row_action_url_name %}
+        <td class="col-actions-header">
+          <a href="{% url row_action_url_name pk=r.IDAccAuto %}" class="btn btn-primary" style="font-size:0.75rem;padding:0.25rem 0.5rem;">🔍 Ver</a>
+        </td>
+        {% endif %}
+        {% for col_key, col_label in ordered_cols.items %}
+          <td data-col="{{ col_key }}" class="{% if col_key not in default_cols %}col-hidden{% endif %}">
+            {% if col_key == 'Hijo' and r.Hijo %}
+              {{ r.Hijo.DescAccAuto }}
+            {% else %}
+              {{ r|dict_key:col_key }}
+            {% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<nav class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page=1{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&laquo;</a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&lsaquo;</a>
+  {% endif %}
+  <span class="current">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&rsaquo;</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&q={{ search }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">&raquo;</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <p style="text-align:center;color:var(--color-text-dim);padding:2rem;">
+    {% if search %}No se encontraron acciones automáticas con "{{ search }}".{% else %}No hay acciones automáticas definidas.{% endif %}
+  </p>
+</div>
+{% endif %}
+{% endblock %}

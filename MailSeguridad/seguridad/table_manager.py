@@ -328,6 +328,31 @@ tables.register(TableView(
     row_action_url_name="actuacion_detail",
 ))
 
+# ── AccionesAuto columns ────────────────────────
+
+
+ACCIONES_AUTO_ALL_COLS: dict[str, str] = {
+    "IDAccAuto": "ID",
+    "DescAccAuto": "Descripción",
+    "Tipo": "Tipo",
+    "Hijo": "Hijo",
+}
+
+tables.register(TableView(
+    menu_option="accionesauto_list",
+    columns=ACCIONES_AUTO_ALL_COLS,
+    sort_fields=["IDAccAuto", "DescAccAuto", "Tipo"],
+    sort_labels={
+        "IDAccAuto": "ID",
+        "DescAccAuto": "Descripción",
+        "Tipo": "Tipo",
+    },
+    default_cols=["IDAccAuto", "DescAccAuto", "Tipo", "Hijo"],
+    paginate_by=50,
+    row_action_url_name="accionesauto_detail",
+))
+
+
 tables.register(TableView(
     menu_option="actuaciones_tickets",
     columns=MENSAJES_ALL_COLS | {

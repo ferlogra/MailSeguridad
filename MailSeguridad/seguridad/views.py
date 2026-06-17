@@ -1175,4 +1175,124 @@ def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
     })
 
 
+# ── AccionesAuto ─────────────────────────────────────────────────
+
+
+@login_required
+def accionesauto_list_view(request: HttpRequest) -> HttpResponse:
+    """List AccionesAuto records."""
+    user = cast(Any, request).user
+    search = request.GET.get("q", "").strip()
+    qs = AccionesAuto.objects.all()
+    if search:
+        qs = qs.filter(
+            Q(DescAccAuto__icontains=search) | Q(Tipo__icontains=search)
+        )
+    cfg = tables["accionesauto_list"]
+    table_ctx = build_table_context(request, user, cfg)
+    sort_spec = table_ctx["sort_spec"]
+    if sort_spec:
+        order = [
+            f"-{s['field']}" if s["direction"] == "desc" else s["field"]
+            for s in sort_spec
+        ]
+        qs = qs.order_by(*order)
+    else:
+        qs = qs.order_by("IDAccAuto")
+    records, page_obj, is_paginated = paginate_queryset(request, qs, cfg.paginate_by)
+    return render(request, "seguridad/accionesauto_list.html", {
+        "records": records,
+        "search": search,
+        "page_obj": page_obj,
+        "is_paginated": is_paginated,
+        **table_ctx,
+    })
+
+
+@login_required
+def accionesauto_create_view(request: HttpRequest) -> HttpResponse:
+    """Create a new AccionesAuto record."""
+    padres = AccionesAuto.objects.all().order_by("DescAccAuto")
+    if request.method == "POST":
+        hijo_pk = request.POST.get("Hijo", "").strip()
+        hijo = get_object_or_404(AccionesAuto, pk=int(hijo_pk)) if hijo_pk else None
+        obj = AccionesAuto(
+            DescAccAuto=request.POST.get("DescAccAuto", "").strip(),
+            Tipo=request.POST.get("Tipo", "Mensaje"),
+            Hijo=hijo,
+        )
+        obj.save()
+        messages.success(request, f"Acción automática {obj.pk} creada.")
+        return redirect("accionesauto_detail", pk=obj.pk)
+    from .table_manager import tables as _t
+    cfg = _t.get("accionesauto_list")
+    field_labels = dict(cfg.columns) if cfg else {}
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    return render(request, "seguridad/accionesauto_detail.html", {
+        "obj": None,
+        "field_labels": field_labels,
+        "is_admin": is_admin,
+        "is_new": True,
+        "padres": padres,
+    })
+
+
+@login_required
+def accionesauto_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """View/edit a single AccionesAuto record + inline AccAutoFields."""
+    obj = get_object_or_404(AccionesAuto, pk=pk)
+    padres = AccionesAuto.objects.exclude(IDAccAuto=pk).order_by("DescAccAuto")
+
+    # ── Delete parent ──
+    if request.method == "POST" and request.POST.get("_method") == "delete":
+        obj.delete()
+        messages.success(request, f"Acción automática {pk} eliminada.")
+        return redirect("accionesauto_list")
+
+    # ── Save parent ──
+    if request.method == "POST" and request.POST.get("_method") == "save":
+        hijo_pk = request.POST.get("Hijo", "").strip()
+        hijo = get_object_or_404(AccionesAuto, pk=int(hijo_pk)) if hijo_pk else None
+        obj.DescAccAuto = request.POST.get("DescAccAuto", "").strip()
+        obj.Tipo = request.POST.get("Tipo", "Mensaje")
+        obj.Hijo = hijo
+        obj.save()
+        messages.success(request, f"Acción automática {pk} actualizada.")
+        return redirect("accionesauto_detail", pk=pk)
+
+    # ── Add child field ──
+    if request.method == "POST" and request.POST.get("_method") == "add_field":
+        AccAutoFields.objects.create(
+            IDAccAuto=obj,
+            Orden=int(request.POST.get("Orden", 0)),
+            Field=request.POST.get("Field", "").strip(),
+            Cond=request.POST.get("Cond", "EQ"),
+            Valor=request.POST.get("Valor", "").strip(),
+        )
+        messages.success(request, "Campo añadido.")
+        return redirect("accionesauto_detail", pk=pk)
+
+    # ── Delete child field ──
+    if request.method == "POST" and request.POST.get("_method") == "del_field":
+        field_pk = request.POST.get("field_pk", "").strip()
+        if field_pk:
+            AccAutoFields.objects.filter(pk=int(field_pk), IDAccAuto=obj).delete()
+            messages.success(request, "Campo eliminado.")
+        return redirect("accionesauto_detail", pk=pk)
+
+    # ── GET ──
+    campos = AccAutoFields.objects.filter(IDAccAuto=obj).order_by("Orden")
+    from .table_manager import tables as _t
+    cfg = _t.get("accionesauto_list")
+    field_labels = dict(cfg.columns) if cfg else {}
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    return render(request, "seguridad/accionesauto_detail.html", {
+        "obj": obj,
+        "field_labels": field_labels,
+        "is_admin": is_admin,
+        "padres": padres,
+        "campos": campos,
+    })
 
