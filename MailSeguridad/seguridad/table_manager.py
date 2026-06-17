@@ -250,39 +250,43 @@ ACTUACIONES_ALL_COLS: dict[str, str] = {
 # ── Register tables ─────────────────────────────────────────────
 
 
+MENSAJES_SORT_FIELDS = [
+    "id", "familia", "id_principal", "grupo", "filtro", "asunto_resumen",
+    "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
+    "crq_asociado", "ventana_o_fecha", "num_mensajes", "ultimo_email",
+    "remitente_ultimo", "message_ids", "outlook_urls", "revision",
+    "is_body_html", "to", "cc", "user",
+    "internet_message_id", "conversation_id",
+]
+
+MENSAJES_SORT_LABELS = {
+    "id": "ID", "familia": "Familia", "id_principal": "ID principal",
+    "grupo": "Grupo", "filtro": "Filtro",
+    "asunto_resumen": "Asunto resumen",
+    "estado": "Estado", "accion_tipo": "Acción / Tipo",
+    "inc_relacionado": "INC relacionado",
+    "cs_relacionado": "CS relacionado",
+    "crq_asociado": "CRQ asociado",
+    "ventana_o_fecha": "Ventana / Fecha",
+    "num_mensajes": "Nº mensajes",
+    "ultimo_email": "Último email",
+    "remitente_ultimo": "Remitente último",
+    "message_ids": "Message IDs",
+    "outlook_urls": "URLs Outlook",
+    "revision": "Revisión",
+    "is_body_html": "Body HTML",
+    "to": "Para (To)",
+    "cc": "Cc",
+    "user": "Usuario",
+    "internet_message_id": "ID del mensaje (Internet)",
+    "conversation_id": "ID de conversación",
+}
+
 tables.register(TableView(
     menu_option="mensajes_list",
     columns=MENSAJES_ALL_COLS,
-    sort_fields=[
-        "id", "familia", "id_principal", "grupo", "filtro", "asunto_resumen",
-        "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
-        "crq_asociado", "ventana_o_fecha", "num_mensajes", "ultimo_email",
-        "remitente_ultimo", "message_ids", "outlook_urls", "revision",
-        "is_body_html", "to", "cc", "user",
-        "internet_message_id", "conversation_id",
-    ],
-    sort_labels={
-        "id": "ID", "familia": "Familia", "id_principal": "ID principal",
-        "grupo": "Grupo", "filtro": "Filtro",
-        "asunto_resumen": "Asunto resumen",
-        "estado": "Estado", "accion_tipo": "Acción / Tipo",
-        "inc_relacionado": "INC relacionado",
-        "cs_relacionado": "CS relacionado",
-        "crq_asociado": "CRQ asociado",
-        "ventana_o_fecha": "Ventana / Fecha",
-        "num_mensajes": "Nº mensajes",
-        "ultimo_email": "Último email",
-        "remitente_ultimo": "Remitente último",
-        "message_ids": "Message IDs",
-        "outlook_urls": "URLs Outlook",
-        "revision": "Revisión",
-        "is_body_html": "Body HTML",
-        "to": "Para (To)",
-        "cc": "Cc",
-        "user": "Usuario",
-        "internet_message_id": "ID del mensaje (Internet)",
-        "conversation_id": "ID de conversación",
-    },
+    sort_fields=MENSAJES_SORT_FIELDS,
+    sort_labels=MENSAJES_SORT_LABELS,
     default_cols=[
         "id", "familia", "id_principal", "grupo", "asunto_resumen",
         "estado", "accion_tipo", "num_mensajes", "ultimo_email",
@@ -322,6 +326,32 @@ tables.register(TableView(
     default_cols=["id_actuacion", "fecha_hora", "id_tipo_actuacion", "breve", "amplio", "cierra"],
     paginate_by=50,
     row_action_url_name="actuacion_detail",
+))
+
+tables.register(TableView(
+    menu_option="actuaciones_tickets",
+    columns=MENSAJES_ALL_COLS | {
+        "act_tipo": "Act. Tipo",
+        "act_fecha": "Act. Fecha",
+        "act_breve": "Act. Breve",
+        "act_amplio": "Act. Amplio",
+        "act_cierra": "Cierra",
+        "act_user": "Act. Usuario",
+    },
+    sort_fields=MENSAJES_SORT_FIELDS + ["act_tipo", "act_fecha", "act_breve", "act_cierra", "act_user"],
+    sort_labels=MENSAJES_SORT_LABELS | {
+        "act_tipo": "Act. Tipo",
+        "act_fecha": "Act. Fecha",
+        "act_breve": "Act. Breve",
+        "act_cierra": "Cierra",
+        "act_user": "Act. Usuario",
+    },
+    default_cols=[
+        "id", "familia", "id_principal", "asunto_resumen", "estado",
+        "act_tipo", "act_fecha", "act_breve", "act_cierra", "act_user",
+    ],
+    paginate_by=50,
+    row_action_url_name="mensaje_detail",
 ))
 
 

@@ -1142,7 +1142,6 @@ CREATE TABLE IF NOT EXISTS Mensajes (
     MessageIds        TEXT,
     OutlookUrls       TEXT,
     Revision          TEXT,
-    IdActuacion       INTEGER NOT NULL DEFAULT 0,
     Body              TEXT,
     IsBodyHTML        INTEGER NOT NULL DEFAULT 0,
     "To"              TEXT,
@@ -1166,13 +1165,13 @@ INSERT INTO Mensajes (
     Familia, ID_principal, Grupo, Filtro, Asunto_resumen, Estado,
     Accion_tipo, INC_relacionado, CS_relacionado, CRQ_asociado,
     Ventana_o_fecha, Ultimo_email_2026, Remitente_ultimo,
-    Num_Mensajes, MessageIds, OutlookUrls, Revision, IdActuacion,
+    Num_Mensajes, MessageIds, OutlookUrls, Revision, 
     Body, IsBodyHTML, "To", "Cc", "User", InternetMessageId, ConversationId, InternetMessageHeaders
 ) VALUES (
     @Familia, @ID_principal, @Grupo, @Filtro, @Asunto_resumen, @Estado,
     @Accion_tipo, @INC_relacionado, @CS_relacionado, @CRQ_asociado,
     @Ventana_o_fecha, @Ultimo_email_2026, @Remitente_ultimo,
-    @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, @IdActuacion,
+    @Num_Mensajes, @MessageIds, @OutlookUrls, @Revision, 
     @Body, @IsBodyHTML, @To, @Cc, @User, @InternetMessageId, @ConversationId, @InternetMessageHeaders
 )
 "@
@@ -1197,7 +1196,6 @@ INSERT INTO Mensajes (
                 MessageIds      = if ($row.MessageIds)      { [string]$row.MessageIds }      else { '' }
                 OutlookUrls     = if ($row.OutlookUrls)     { [string]$row.OutlookUrls }     else { '' }
                 Revision        = $revisionTimestamp
-                IdActuacion     = 0
                 Body            = if ($row.Body)            { [string]$row.Body }            else { '' }
                 IsBodyHTML      = if ($row.IsBodyHTML)      { 1 }                            else { 0 }
                 To              = if ($row.To)              { [string]$row.To }              else { '' }

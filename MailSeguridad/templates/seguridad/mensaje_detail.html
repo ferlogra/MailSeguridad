@@ -2,6 +2,23 @@
 {% load seguridad_extras %}
 {% block title %}MailSeguridad — Mensaje #{{ mensaje.id }}{% endblock %}
 {% block content %}
+<style>
+.btn-search-related {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  vertical-align: middle;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+.btn-search-related:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+</style>
 <div class="page-header">
   <h1>Mensaje #{{ mensaje.id }}</h1>
   <a href="{% url 'mensajes_list' %}" class="btn btn-secondary">← Volver a mensajes</a>
@@ -30,16 +47,40 @@
         <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="6">{{ mensaje|dict_key:fld|default:'' }}</textarea>
       {% elif fld == 'to' or fld == 'cc' %}
         <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="2">{{ mensaje|dict_key:fld|default:'' }}</textarea>
+        {% if fld == 'to' %}
+        <button type="button" class="btn btn-sm btn-search-related"
+                title="Buscar mensajes con mismo valor"
+                onclick="openSearchModal('{{ fld }}', '{{ mensaje|dict_key:fld|default:''|escapejs }}')"
+                {% if not mensaje|dict_key:fld %}disabled style="opacity:0.3"{% endif %}>
+          🔍
+        </button>
+        {% endif %}
       {% elif fld == 'internet_message_headers' %}
         <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="8">{{ mensaje|dict_key:fld|default:'' }}</textarea>
       {% elif fld == 'internet_message_id' or fld == 'conversation_id' %}
         <textarea id="id_{{ fld }}" name="{{ fld }}" class="field" rows="2">{{ mensaje|dict_key:fld|default:'' }}</textarea>
+        {% if fld == 'internet_message_id' or fld == 'conversation_id' %}
+        <button type="button" class="btn btn-sm btn-search-related"
+                title="Buscar mensajes con mismo valor"
+                onclick="openSearchModal('{{ fld }}', '{{ mensaje|dict_key:fld|default:''|escapejs }}')"
+                {% if not mensaje|dict_key:fld %}disabled style="opacity:0.3"{% endif %}>
+          🔍
+        </button>
+        {% endif %}
       {% elif fld == 'asunto_resumen' %}
         <input type="text" id="id_{{ fld }}" name="{{ fld }}"
                class="field" value="{{ mensaje|dict_key:fld|default:'' }}">
       {% else %}
         <input type="text" id="id_{{ fld }}" name="{{ fld }}"
                class="field" value="{{ mensaje|dict_key:fld|default:'' }}">
+        {% if fld == 'cs_relacionado' or fld == 'inc_relacionado' %}
+        <button type="button" class="btn btn-sm btn-search-related"
+                title="Buscar mensajes con mismo valor"
+                onclick="openSearchModal('{{ fld }}', '{{ mensaje|dict_key:fld|default:''|escapejs }}')"
+                {% if not mensaje|dict_key:fld %}disabled style="opacity:0.3"{% endif %}>
+          🔍
+        </button>
+        {% endif %}
       {% endif %}
     </div>
     {% endfor %}
@@ -61,5 +102,84 @@
   {% csrf_token %}
   <input type="hidden" name="_method" value="delete">
 </form>
-{% endif %}
+
+<div id="search-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width:90%;width:1100px;">
+    <div class="modal-header">
+      <h2>Mensajes relacionados — <span id="search-modal-field-label"></span>: <span id="search-modal-field-value"></span></h2>
+      <button type="button" class="modal-close" id="search-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-loading" id="search-loading" style="text-align:center;padding:2rem;">Cargando...</div>
+      <div class="search-empty" id="search-empty" style="display:none;text-align:center;padding:2rem;color:var(--color-text-dim);">No se encontraron mensajes con ese valor.</div>
+      <div id="search-table-wrapper" style="display:none;">
+        <table class="data-table" id="search-results-table">
+          <thead><tr>
+            <th>ID</th><th>ID Principal</th><th>Asunto</th><th>Estado</th>
+            <th>Familia</th><th>Grupo</th><th>Remitente</th>
+            <th>Último email</th><th>CS Rel.</th><th>INC Rel.</th>
+          </tr></thead>
+          <tbody id="search-results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span id="search-result-count" style="font-size:0.85rem;color:var(--color-text-dim);"></span>
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('search-modal').style.display='none'">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openSearchModal(field, value) {
+  if (!field || !value) return;
+  const modal = document.getElementById('search-modal');
+  const label = document.getElementById('search-modal-field-label');
+  const valSpan = document.getElementById('search-modal-field-value');
+  const loading = document.getElementById('search-loading');
+  const empty = document.getElementById('search-empty');
+  const tableWrapper = document.getElementById('search-table-wrapper');
+  const tbody = document.getElementById('search-results-tbody');
+  const countSpan = document.getElementById('search-result-count');
+  const labels = {
+    'cs_relacionado': 'CS Relacionado',
+    'inc_relacionado': 'INC Relacionado',
+    'to': 'Para (TO)',
+    'internet_message_id': 'ID del mensaje (Internet)',
+    'conversation_id': 'ID de Conversación',
+  };
+  label.textContent = labels[field] || field;
+  valSpan.textContent = value;
+  loading.style.display = 'block';
+  empty.style.display = 'none';
+  tableWrapper.style.display = 'none';
+  tbody.innerHTML = '';
+  countSpan.textContent = '';
+  modal.style.display = 'flex';
+  const url = "{% url 'mensajes_by_field_api' %}?field=" + encodeURIComponent(field) + "&value=" + encodeURIComponent(value);
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      loading.style.display = 'none';
+      if (!data || data.length === 0) { empty.style.display = 'block'; return; }
+      countSpan.textContent = data.length + ' resultado(s)';
+      tableWrapper.style.display = 'block';
+      data.forEach(function(row) {
+        const tr = document.createElement('tr');
+        ['id','id_principal','asunto_resumen','estado','familia','grupo','remitente_ultimo','ultimo_email','cs_relacionado','inc_relacionado'].forEach(function(f) {
+          const td = document.createElement('td');
+          td.textContent = row[f] || '';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(function(err) { loading.textContent = 'Error: ' + err.message; });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('search-modal');
+  document.getElementById('search-modal-close').addEventListener('click', function() { modal.style.display = 'none'; });
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+});
+</script>
 {% endblock %}

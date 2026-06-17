@@ -30,6 +30,7 @@ from .forms import (
 from .models import Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
 
 from .table_manager import (
+    _parse_sort,
     build_table_context,
     list_user_configs,
     paginate_queryset,
@@ -489,6 +490,7 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
 
     return render(request, "seguridad/mensajes_list.html", {
         "mensajes": mensajes,
+        "page_title": "Mensajes",
         "search": search,
         "familia": familia, "grupo": grupo_val,
         "remitente_ultimo": remitente_ultimo,
@@ -1000,12 +1002,52 @@ def docs_view(request: HttpRequest) -> HttpResponse:
 @login_required
 def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
     """Show mensajes with their related actuaciones (flat LEFT JOIN)."""
-    search = request.GET.get("q", "").strip()
-    sort = request.GET.get("sort", "").strip()
-    page_num = request.GET.get("page", "1")
+    from django.db import connection
 
+    # ── Extract filters (same as mensajes_list) ──
+    search = request.GET.get("q", "").strip()
+    familia = request.GET.get("familia", "").strip()
+    grupo_val = request.GET.get("grupo", "").strip()
+    remitente_ultimo = request.GET.get("remitente_ultimo", "").strip()
+    estado = request.GET.get("estado", "").strip()
+    revision = request.GET.get("revision", "").strip()
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+
+    # ── Distinct values for dropdowns ──
+    familias_list = list(Mensaje.objects.values_list("familia", flat=True).exclude(familia__isnull=True).exclude(familia="").distinct().order_by("familia"))
+    grupos_list = list(Mensaje.objects.values_list("grupo", flat=True).exclude(grupo__isnull=True).exclude(grupo="").distinct().order_by("grupo"))
+    estados_list = list(Mensaje.objects.values_list("estado", flat=True).exclude(estado__isnull=True).exclude(estado="").distinct().order_by("estado"))
+    revisiones_list = list(Mensaje.objects.values_list("revision", flat=True).exclude(revision__isnull=True).exclude(revision="").distinct().order_by("revision"))
+
+    # ── Build SQL ──
     sql = """
-        SELECT m.*,
+        SELECT m.Id AS id,
+               m.Familia AS familia,
+               m.ID_principal AS id_principal,
+               m.Grupo AS grupo,
+               m.Filtro AS filtro,
+               m.Asunto_resumen AS asunto_resumen,
+               m.Estado AS estado,
+               m.Accion_tipo AS accion_tipo,
+               m.INC_relacionado AS inc_relacionado,
+               m.CS_relacionado AS cs_relacionado,
+               m.CRQ_asociado AS crq_asociado,
+               m.Ventana_o_fecha AS ventana_o_fecha,
+               m.Ultimo_email_2026 AS ultimo_email,
+               m.Remitente_ultimo AS remitente_ultimo,
+               m.Num_Mensajes AS num_mensajes,
+               m.MessageIds AS message_ids,
+               m.OutlookUrls AS outlook_urls,
+               m.Revision AS revision,
+               m.Body AS body,
+               m."User" AS "user",
+               m.IsBodyHTML AS is_body_html,
+               m."To" AS "to",
+               m."Cc" AS cc,
+               m.InternetMessageHeaders AS internet_message_headers,
+               m.InternetMessageId AS internet_message_id,
+               m.ConversationId AS conversation_id,
                a.IdActuacion AS act_id,
                t.Breve AS act_tipo,
                a.FechaHora AS act_fecha,
@@ -1017,11 +1059,14 @@ def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
         LEFT JOIN Actuaciones a ON m.InternetMessageId = a.Mensaje
         LEFT JOIN TipoActuaciones t ON a.IdTipoActuacion = t.IdTipoActuacion
         LEFT JOIN seguridad_user u ON a.IdUser = u.id
+        WHERE 1=1
     """
 
     params = []
+
+    # ── Full-text search ──
     if search:
-        sql += """ WHERE (
+        sql += """ AND (
             m.ID_principal LIKE ? OR m.Asunto_resumen LIKE ? OR m.Familia LIKE ?
             OR m.Grupo LIKE ? OR m.Remitente_ultimo LIKE ? OR m.Estado LIKE ?
             OR m.Revision LIKE ? OR m."To" LIKE ? OR m."Cc" LIKE ? OR m."User" LIKE ?
@@ -1029,41 +1074,120 @@ def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
             OR a.Breve LIKE ? OR t.Breve LIKE ? OR u.username LIKE ?
         )"""
         like = f"%{search}%"
-        params = [like] * 15
+        params.extend([like] * 15)
 
-    allowed_sorts = {
-        "id": "m.Id", "familia": "m.Familia", "id_principal": "m.ID_principal",
-        "grupo": "m.Grupo", "asunto_resumen": "m.Asunto_resumen",
-        "estado": "m.Estado", "remitente_ultimo": "m.Remitente_ultimo",
-        "ultimo_email": "m.Ultimo_email_2026", "revision": "m.Revision",
-        "num_mensajes": "m.Num_Mensajes", "internet_message_id": "m.InternetMessageId",
-        "act_tipo": "t.Breve", "act_fecha": "a.FechaHora",
-        "act_breve": "a.Breve", "act_cierra": "a.Cierra", "act_user": "u.username",
-    }
-    sort_col = allowed_sorts.get(sort, "m.Id")
-    sort_dir = "DESC" if request.GET.get("desc") else "ASC"
-    sql += f" ORDER BY {sort_col} {sort_dir}"
+    # ── Advanced filters ──
+    if familia:
+        sql += " AND m.Familia = ?"
+        params.append(familia)
+    if grupo_val:
+        sql += " AND m.Grupo = ?"
+        params.append(grupo_val)
+    if remitente_ultimo:
+        sql += " AND m.Remitente_ultimo LIKE ?"
+        params.append(f"%{remitente_ultimo}%")
+    if estado:
+        sql += " AND m.Estado = ?"
+        params.append(estado)
+    if revision:
+        sql += " AND m.Revision = ?"
+        params.append(revision)
+    if fecha_desde:
+        sql += " AND m.Ultimo_email_2026 >= ?"
+        params.append(fecha_desde)
+    if fecha_hasta:
+        sql += " AND m.Ultimo_email_2026 <= ?"
+        params.append(fecha_hasta)
 
-    from django.db import connection
-    with connection.cursor() as cursor:
-        cursor.execute(sql, params)
-        columns = [col[0] for col in cursor.description]
-        all_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    # ── Execute ──
+    # NOTE: Use raw sqlite3 cursor to avoid Django's CursorDebugWrapper.
+    # CursorDebugWrapper calls last_executed_query() which does sql % params,
+    # but raw SQL uses ? placeholders (not %s like Django ORM), causing
+    # "not all arguments converted during string formatting" TypeError
+    # when any filter param is set with DEBUG=True.
+    raw_cursor = connection.connection.cursor()
+    try:
+        raw_cursor.execute(sql, params)
+        columns = [col[0] for col in raw_cursor.description]
+        all_rows = [dict(zip(columns, row)) for row in raw_cursor.fetchall()]
+    finally:
+        raw_cursor.close()
 
+    # ── Sort ──
+    from seguridad.table_manager import tables, build_table_context
+    cfg = tables["actuaciones_tickets"]
+    sort_raw = request.GET.get("sort", "")
+    sort_spec = _parse_sort(sort_raw, cfg.sort_fields) if sort_raw else []
+
+    # Sort in Python (list of dicts)
+    for s in reversed(sort_spec):
+        reverse = s["direction"] == "desc"
+        field = s["field"]
+        all_rows.sort(key=lambda r, f=field: (str(r.get(f, "") or "")).lower(), reverse=reverse)
+
+    # ── Paginate ──
     from django.core.paginator import Paginator
-    paginator = Paginator(all_rows, 50)
-    page = paginator.get_page(page_num)
+    paginator = Paginator(all_rows, cfg.paginate_by)
+    page = request.GET.get("page", 1)
+    try:
+        page_obj = paginator.page(page)
+    except Exception:
+        page_obj = paginator.page(1)
 
+    # ── Build query string ──
     import urllib.parse
     params_qs = request.GET.copy()
     params_qs.pop("page", None)
     base_qs = params_qs.urlencode()
 
-    return render(request, "actuaciones_tickets.html", {
-        "page": page,
+    table_ctx = build_table_context(request, request.user, cfg, base_query_string=base_qs)
+
+    return render(request, "seguridad/mensajes_list.html", {
+        "mensajes": page_obj.object_list,
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
+        "page_title": "Actuaciones",
         "search": search,
-        "sort": sort,
-        "base_query_string": base_qs,
-        "app_version": __import__("MailSeguridad.version", fromlist=["VERSION"]).VERSION,
+        "familia": familia,
+        "grupo": grupo_val,
+        "remitente_ultimo": remitente_ultimo,
+        "estado": estado,
+        "revision": revision,
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+        "familias": familias_list,
+        "grupos": grupos_list,
+        "estados": estados_list,
+        "revisiones": revisiones_list,
+        **table_ctx,
     })
+
+
+@login_required
+def mensajes_by_field_api(request: HttpRequest) -> JsonResponse:
+    """Return mensajes filtered by field=value as JSON for the detail modal."""
+    field = request.GET.get("field", "").strip()
+    value = request.GET.get("value", "").strip()
+
+    if not field or not value:
+        return JsonResponse({"error": "field and value are required"}, status=400)
+
+    allowed_fields = {
+        "cs_relacionado": "cs_relacionado__exact",
+        "inc_relacionado": "inc_relacionado__exact",
+        "to": "to__exact",
+        "internet_message_id": "internet_message_id__exact",
+        "conversation_id": "conversation_id__exact",
+    }
+
+    if field not in allowed_fields:
+        return JsonResponse({"error": f"field '{field}' not allowed"}, status=400)
+
+    filter_kw = {allowed_fields[field]: value}
+    qs = list(Mensaje.objects.filter(**filter_kw).values(
+        "id", "id_principal", "asunto_resumen", "estado", "familia", "grupo",
+        "remitente_ultimo", "ultimo_email", "cs_relacionado", "inc_relacionado",
+    )[:100])
+
+    return JsonResponse(qs, safe=False)
 

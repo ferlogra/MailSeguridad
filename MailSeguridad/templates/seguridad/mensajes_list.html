@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load seguridad_extras %}
-{% block title %}MailSeguridad — Mensajes{% endblock %}
+{% block title %}MailSeguridad — {{ page_title|default:"Mensajes" }}{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1>Mensajes de tickets</h1>
+  <h1>{{ page_title|default:"Mensajes" }}</h1>
   <div style="display:flex;gap:0.5rem;align-items:center;">
     <span style="font-size:0.85rem;color:var(--color-text-dim);">{{ page_obj.paginator.count|default:mensajes|length }} registros</span>
   </div>
@@ -132,30 +132,30 @@
       <tr>
         {% if row_action_url_name %}
         <td class="col-actions-header">
-          <button class="btn btn-secondary btn-act" data-mensaje-id="{{ m.id }}" data-mensaje-internet-id="{{ m.internet_message_id|default:'' }}" data-mensaje-label="{{ m.id_principal|default:m.asunto_resumen|default:m.id }}" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Act.</button>
+          <button class="btn btn-secondary btn-act" data-mensaje-id="{{ m|dict_key:'id' }}" data-mensaje-internet-id="{{ m|dict_key:'internet_message_id'|default:'' }}" data-mensaje-label="{% with idp=m|dict_key:'id_principal' asum=m|dict_key:'asunto_resumen' mid=m|dict_key:'id' %}{{ idp|default:asum|default:mid }}{% endwith %}" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Act.</button>
         </td>
         <td class="col-actions-header">
-          <a href="{% url row_action_url_name pk=m.id %}" class="btn btn-primary" style="font-size:0.75rem;padding:0.25rem 0.5rem;">🔍 Ver</a>
+          <a href="{% url row_action_url_name pk=m|dict_key:'id' %}" class="btn btn-primary" style="font-size:0.75rem;padding:0.25rem 0.5rem;">🔍 Ver</a>
         </td>
         {% endif %}
         {% for col_key, col_label in ordered_cols.items %}
           <td data-col="{{ col_key }}" class="{% if col_key not in default_cols %}col-hidden{% endif %}">
             {% if col_key == 'outlook_urls' %}
-              <div class="urls-cell">{{ m.outlook_urls|render_links }}</div>
+              <div class="urls-cell">{{ m|dict_key:'outlook_urls'|render_links }}</div>
             {% elif col_key == 'message_ids' %}
-              <span style="font-size:0.75rem;">{{ m.message_ids|truncatechars:60 }}</span>
+              <span style="font-size:0.75rem;">{{ m|dict_key:'message_ids'|truncatechars:60 }}</span>
             {% elif col_key == 'body' %}
-              <span style="font-size:0.75rem;">{{ m.body|truncatechars:80 }}</span>
+              <span style="font-size:0.75rem;">{{ m|dict_key:'body'|truncatechars:80 }}</span>
             {% elif col_key == 'internet_message_headers' %}
-              <span style="font-size:0.75rem;">{{ m.internet_message_headers|truncatechars:60 }}</span>
+              <span style="font-size:0.75rem;">{{ m|dict_key:'internet_message_headers'|truncatechars:60 }}</span>
             {% elif col_key == 'internet_message_id' or col_key == 'conversation_id' %}
               <span style="font-size:0.75rem;">{{ m|dict_key:col_key|truncatechars:60 }}</span>
             {% elif col_key == 'ultimo_email' %}
-              {{ m.ultimo_email|render_links }}
+              {{ m|dict_key:'ultimo_email'|render_links }}
             {% elif col_key == 'num_mensajes' %}
-              {{ m.num_mensajes|default:'' }}
-            {% elif col_key == 'id_principal' and m.id_principal %}
-              <strong>{{ m.id_principal|render_links }}</strong>
+              {{ m|dict_key:'num_mensajes'|default:'' }}
+            {% elif col_key == 'id_principal' and m|dict_key:'id_principal' %}
+              <strong>{{ m|dict_key:'id_principal'|render_links }}</strong>
             {% else %}
               {{ m|dict_key:col_key|render_links }}
             {% endif %}
@@ -184,7 +184,7 @@
 {% else %}
 <div class="card">
   <p style="text-align:center;color:var(--color-text-dim);padding:2rem;">
-    {% if search %}No se encontraron mensajes con "{{ search }}".{% else %}No hay mensajes disponibles. Ejecuta get-Mail.ps1 para poblar la base de datos.{% endif %}
+    {% if search %}No se encontraron resultados con "{{ search }}".{% else %}No hay datos disponibles.{% endif %}
   </p>
 </div>
 {% endif %}
