@@ -635,8 +635,9 @@ def mensaje_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
         "crq_asociado", "ventana_o_fecha", "ultimo_email",
         "remitente_ultimo", "num_mensajes", "message_ids", "outlook_urls",
-        "revision", "body", "is_body_html", "to", "cc", "user",
+        "revision", "is_body_html", "to", "cc", "user",
         "internet_message_headers", "internet_message_id", "conversation_id",
+        "body",
     ]
     user = cast(Any, request).user
     is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR

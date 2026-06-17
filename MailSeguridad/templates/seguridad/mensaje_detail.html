@@ -28,6 +28,12 @@
   flex: 1;
   min-width: 0;
 }
+.detail-field-fullwidth {
+  grid-column: 1 / -1;
+}
+.detail-field-fullwidth textarea {
+  min-height: 12rem;
+}
 </style>
 <div class="page-header">
   <h1>Mensaje #{{ mensaje.id }}</h1>
@@ -45,7 +51,7 @@
 
   <div class="detail-grid">
     {% for fld in editable_fields %}
-    <div class="detail-field">
+    <div class="detail-field{% if fld == 'body' %} detail-field-fullwidth{% endif %}">
       <label for="id_{{ fld }}">{{ field_labels|dict_key:fld|default:fld }}</label>
       {% if fld == 'num_mensajes' %}
         <input type="number" id="id_{{ fld }}" name="{{ fld }}"
