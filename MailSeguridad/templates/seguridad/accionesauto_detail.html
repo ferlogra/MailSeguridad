@@ -116,7 +116,12 @@
     </div>
     <div>
       <label style="display:block;font-size:0.8rem;margin-bottom:0.2rem;">Campo</label>
-      <input type="text" name="Field" class="field" style="width:12rem;" maxlength="128" required>
+      <select name="Field" class="field" style="width:12rem;" required>
+        <option value="">— Seleccionar —</option>
+        {% for f in mensaje_fields %}
+          <option value="{{ f }}">{{ f }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div>
       <label style="display:block;font-size:0.8rem;margin-bottom:0.2rem;">Condición</label>

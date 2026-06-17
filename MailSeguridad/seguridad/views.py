@@ -1283,6 +1283,7 @@ def accionesauto_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
 
     # ── GET ──
     campos = AccAutoFields.objects.filter(IDAccAuto=obj).order_by("Orden")
+    mensaje_fields = [f.name for f in Mensaje._meta.get_fields()]
     from .table_manager import tables as _t
     cfg = _t.get("accionesauto_list")
     field_labels = dict(cfg.columns) if cfg else {}
@@ -1294,5 +1295,6 @@ def accionesauto_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
         "is_admin": is_admin,
         "padres": padres,
         "campos": campos,
+        "mensaje_fields": mensaje_fields,
     })
 
