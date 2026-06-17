@@ -8,5 +8,5 @@ from . import views
 urlpatterns = [
     path("", views.mensajes_list_view, name="mensajes_list"),
     path("<int:pk>/", views.mensaje_detail_view, name="mensaje_detail"),
-    path("mensajes-by-field/", views.mensajes_by_field_api, name="mensajes_by_field_api"),
+
 ]

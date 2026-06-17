@@ -120,83 +120,11 @@
 </form>
 {% endif %}
 
-<div id="search-modal" class="modal-overlay" style="display:none;">
-  <div class="modal-content" style="max-width:90%;width:1100px;">
-    <div class="modal-header">
-      <h2>Mensajes relacionados — <span id="search-modal-field-label"></span>: <span id="search-modal-field-value"></span></h2>
-      <button type="button" class="modal-close" id="search-modal-close">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="search-loading" id="search-loading" style="text-align:center;padding:2rem;">Cargando...</div>
-      <div class="search-empty" id="search-empty" style="display:none;text-align:center;padding:2rem;color:var(--color-text-dim);">No se encontraron mensajes con ese valor.</div>
-      <div id="search-table-wrapper" style="display:none;">
-        <table class="data-table" id="search-results-table">
-          <thead><tr>
-            <th>ID</th><th>ID Principal</th><th>Asunto</th><th>Estado</th>
-            <th>Familia</th><th>Grupo</th><th>Remitente</th>
-            <th>Último email</th><th>CS Rel.</th><th>INC Rel.</th>
-          </tr></thead>
-          <tbody id="search-results-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <span id="search-result-count" style="font-size:0.85rem;color:var(--color-text-dim);"></span>
-      <button type="button" class="btn btn-secondary" onclick="document.getElementById('search-modal').style.display='none'">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <script>
 function openSearchModal(field, value) {
   if (!field || !value) return;
-  const modal = document.getElementById('search-modal');
-  const label = document.getElementById('search-modal-field-label');
-  const valSpan = document.getElementById('search-modal-field-value');
-  const loading = document.getElementById('search-loading');
-  const empty = document.getElementById('search-empty');
-  const tableWrapper = document.getElementById('search-table-wrapper');
-  const tbody = document.getElementById('search-results-tbody');
-  const countSpan = document.getElementById('search-result-count');
-  const labels = {
-    'cs_relacionado': 'CS Relacionado',
-    'inc_relacionado': 'INC Relacionado',
-    'to': 'Para (TO)',
-    'internet_message_id': 'ID del mensaje (Internet)',
-    'conversation_id': 'ID de Conversación',
-  };
-  label.textContent = labels[field] || field;
-  valSpan.textContent = value;
-  loading.style.display = 'block';
-  empty.style.display = 'none';
-  tableWrapper.style.display = 'none';
-  tbody.innerHTML = '';
-  countSpan.textContent = '';
-  modal.style.display = 'flex';
-  const url = "{% url 'mensajes_by_field_api' %}?field=" + encodeURIComponent(field) + "&value=" + encodeURIComponent(value);
-  fetch(url)
-    .then(r => r.json())
-    .then(data => {
-      loading.style.display = 'none';
-      if (!data || data.length === 0) { empty.style.display = 'block'; return; }
-      countSpan.textContent = data.length + ' resultado(s)';
-      tableWrapper.style.display = 'block';
-      data.forEach(function(row) {
-        const tr = document.createElement('tr');
-        ['id','id_principal','asunto_resumen','estado','familia','grupo','remitente_ultimo','ultimo_email','cs_relacionado','inc_relacionado'].forEach(function(f) {
-          const td = document.createElement('td');
-          td.textContent = row[f] || '';
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    })
-    .catch(function(err) { loading.textContent = 'Error: ' + err.message; });
+  const url = "/mensajes/?field=" + encodeURIComponent(field) + "&value=" + encodeURIComponent(value);
+  window.open(url, '_blank');
 }
-document.addEventListener('DOMContentLoaded', function() {
-  const modal = document.getElementById('search-modal');
-  document.getElementById('search-modal-close').addEventListener('click', function() { modal.style.display = 'none'; });
-  modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
-});
 </script>
 {% endblock %}

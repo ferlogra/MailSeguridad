@@ -406,6 +406,8 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
     revision = request.GET.get("revision", "").strip()
     fecha_desde = request.GET.get("fecha_desde", "").strip()
     fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    field_filter = request.GET.get("field", "").strip()
+    field_value = request.GET.get("value", "").strip()
 
     # ── Base queryset ──
     qs = Mensaje.objects.all()
@@ -442,6 +444,15 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
         qs = qs.filter(ultimo_email__gte=fecha_desde)
     if fecha_hasta:
         qs = qs.filter(ultimo_email__lte=fecha_hasta)
+    if field_filter and field_value:
+        # ── Pre-filter by field=value (reuses mensajes list with existing features) ──
+        ALLOWED_FIELDS = frozenset({
+            "to", "internet_message_id", "conversation_id",
+            "cs_relacionado", "inc_relacionado",
+        })
+        if field_filter in ALLOWED_FIELDS:
+            filter_key = field_filter + "__exact"
+            qs = qs.filter(**{filter_key: field_value})
 
     # ── Distinct values for dropdowns ──
     familias_list = (
@@ -1163,31 +1174,4 @@ def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
     })
 
 
-@login_required
-def mensajes_by_field_api(request: HttpRequest) -> JsonResponse:
-    """Return mensajes filtered by field=value as JSON for the detail modal."""
-    field = request.GET.get("field", "").strip()
-    value = request.GET.get("value", "").strip()
-
-    if not field or not value:
-        return JsonResponse({"error": "field and value are required"}, status=400)
-
-    allowed_fields = {
-        "cs_relacionado": "cs_relacionado__exact",
-        "inc_relacionado": "inc_relacionado__exact",
-        "to": "to__exact",
-        "internet_message_id": "internet_message_id__exact",
-        "conversation_id": "conversation_id__exact",
-    }
-
-    if field not in allowed_fields:
-        return JsonResponse({"error": f"field '{field}' not allowed"}, status=400)
-
-    filter_kw = {allowed_fields[field]: value}
-    qs = list(Mensaje.objects.filter(**filter_kw).values(
-        "id", "id_principal", "asunto_resumen", "estado", "familia", "grupo",
-        "remitente_ultimo", "ultimo_email", "cs_relacionado", "inc_relacionado",
-    )[:100])
-
-    return JsonResponse(qs, safe=False)
 
