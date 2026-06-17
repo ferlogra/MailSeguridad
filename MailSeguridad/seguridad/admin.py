@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
+from .models import AccAutoFields, AccionesAuto, Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
 
 
 @admin.register(User)
@@ -51,3 +51,18 @@ class ActuacionAdmin(admin.ModelAdmin):
     search_fields = ["breve", "amplio"]
     list_select_related = ["id_tipo_actuacion", "id_user"]
     ordering = ["-fecha_hora"]
+
+
+@admin.register(AccionesAuto)
+class AccionesAutoAdmin(admin.ModelAdmin):
+    list_display = ["IDAccAuto", "DescAccAuto", "Tipo", "Hijo"]
+    list_filter = ["Tipo"]
+    search_fields = ["DescAccAuto"]
+
+
+@admin.register(AccAutoFields)
+class AccAutoFieldsAdmin(admin.ModelAdmin):
+    list_display = ["IDAaccAutoField", "IDAccAuto", "Orden", "Field", "Cond", "Valor"]
+    list_filter = ["Cond"]
+    search_fields = ["Field", "Valor"]
+    ordering = ["IDAccAuto", "Orden"]

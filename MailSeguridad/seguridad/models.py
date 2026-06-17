@@ -199,3 +199,103 @@ class Actuacion(models.Model):
 
     def __str__(self) -> str:
         return f"{self.fecha_hora:%d/%m/%Y %H:%M} — {self.breve[:60]}"
+
+
+# ── Acciones automáticas ────────────────────────────────────────
+
+
+class AccionesAuto(models.Model):
+    """Configuración de acciones automáticas.
+
+    Define una acción o un grupo de acciones que se pueden aplicar
+    automáticamente a mensajes o a otras acciones.
+    """
+
+    class TipoChoices(models.TextChoices):
+        MENSAJE = "Mensaje", "Mensaje"
+        ACCION = "Accion", "Accion"
+
+    class CondChoices(models.TextChoices):
+        EQ = "EQ", "Igual a"
+        NE = "NE", "No igual a"
+        GT = "GT", "Mayor que"
+        GE = "GE", "Mayor o igual a"
+        LT = "LT", "Menor que"
+        LE = "LE", "Menor o igual que"
+        CONTAINS = "Contains", "Contiene"
+        NCONTAINS = "NContains", "No contiene"
+        LIKE = "Like", "Es como"
+        NLIKE = "NLike", "No es como"
+        FIND = "Find", "Aparece"
+        NFIND = "NFind", "No aparece"
+
+    IDAccAuto = models.AutoField(primary_key=True, db_column="IDAccAuto")
+    DescAccAuto = models.CharField(
+        max_length=64, db_column="DescAccAuto",
+        verbose_name="Descripción",
+    )
+    Tipo = models.CharField(
+        max_length=16, choices=TipoChoices.choices,
+        db_column="Tipo", verbose_name="Tipo",
+    )
+    Hijo = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="Hijo",
+        verbose_name="Registro hijo",
+        help_text="IDAccAuto del registro hijo asociado",
+    )
+
+    class Meta:
+        managed = True
+        db_table = "AccionesAuto"
+        verbose_name = "Acción automática"
+        verbose_name_plural = "Acciones automáticas"
+
+    def __str__(self) -> str:
+        return f"[{self.Tipo}] {self.DescAccAuto[:50]}"
+
+
+class AccAutoFields(models.Model):
+    """Condiciones de campo para una acción automática.
+
+    Relación 1:N con AccionesAuto. Cada registro define una condición
+    (campo, operador, valor) que se evalúa para decidir si una acción
+    se ejecuta.
+    """
+
+    IDAaccAutoField = models.AutoField(primary_key=True, db_column="IDAaccAutoField")
+    IDAccAuto = models.ForeignKey(
+        AccionesAuto,
+        on_delete=models.CASCADE,
+        db_column="IDAccAuto",
+        verbose_name="Acción automática",
+        related_name="campos",
+    )
+    Orden = models.IntegerField(db_column="Orden", verbose_name="Orden")
+    Field = models.CharField(
+        max_length=128, db_column="Field",
+        verbose_name="Campo",
+    )
+    Cond = models.CharField(
+        max_length=16,
+        choices=AccionesAuto.CondChoices.choices,
+        db_column="Cond",
+        verbose_name="Condición",
+    )
+    Valor = models.CharField(
+        max_length=256, db_column="Valor",
+        verbose_name="Valor",
+    )
+
+    class Meta:
+        managed = True
+        db_table = "AccAutoFields"
+        verbose_name = "Campo de acción automática"
+        verbose_name_plural = "Campos de acción automática"
+        ordering = ["IDAccAuto", "Orden"]
+
+    def __str__(self) -> str:
+        return f"{self.Field} {self.Cond} {self.Valor}"

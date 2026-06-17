@@ -137,6 +137,55 @@ La relación con `Mensaje` no es una foreign key real de base de datos, sino un 
 
 ---
 
+---
+
+## AccionesAuto
+
+Configuración de acciones automáticas para aplicar a mensajes o a otras acciones. Tabla gestionada: `AccionesAuto`.
+
+| Columna SQL | Campo Python | Tipo | Descripción |
+|------------|--------------|------|-------------|
+| `IDAccAuto` | `IDAccAuto` | `AutoField` (PK) | Identificador único |
+| `DescAccAuto` | `DescAccAuto` | `varchar(64)` | Descripción de la acción automática |
+| `Tipo` | `Tipo` | `varchar(16)` | Tipo: `Mensaje` (aplica a mensajes) o `Accion` (aplica a acciones) |
+| `Hijo` | `Hijo` | `integer` (FK, nullable) | Auto-referencia: `IDAccAuto` del registro hijo asociado (on_delete=SET_NULL) |
+
+---
+
+## AccAutoFields
+
+Condiciones de campo para una acción automática. Relación 1:N con `AccionesAuto`. Tabla gestionada: `AccAutoFields`.
+
+| Columna SQL | Campo Python | Tipo | Descripción |
+|------------|--------------|------|-------------|
+| `IDAaccAutoField` | `IDAaccAutoField` | `AutoField` (PK) | Identificador único |
+| `IDAccAuto` | `IDAccAuto` | `integer` (FK) | Relación con `AccionesAuto.IDAccAuto` (on_delete=CASCADE) |
+| `Orden` | `Orden` | `integer` | Orden de evaluación de la condición |
+| `Field` | `Field` | `varchar(128)` | Nombre del campo a evaluar |
+| `Cond` | `Cond` | `varchar(16)` | Operador de comparación (ver valores abajo) |
+| `Valor` | `Valor` | `varchar(256)` | Valor contra el que comparar |
+
+**Valores de `Cond`** (operadores similares a Python):
+
+| Código | Significado |
+|--------|-------------|
+| `EQ` | Igual a (`==`) |
+| `NE` | No igual a (`!=`) |
+| `GT` | Mayor que (`>`) |
+| `GE` | Mayor o igual a (`>=`) |
+| `LT` | Menor que (`<`) |
+| `LE` | Menor o igual a (`<=`) |
+| `Contains` | Contiene (`in`) |
+| `NContains` | No contiene (`not in`) |
+| `Like` | Es como (coincidencia de patrón) |
+| `NLike` | No es como |
+| `Find` | Aparece (búsqueda de substring) |
+| `NFind` | No aparece |
+
+Ordenación por defecto: `IDAccAuto`, `Orden`.
+
+---
+
 ## Resumen de tablas
 
 | Tabla SQL | Modelo | Gestionada | Propósito |
@@ -147,3 +196,5 @@ La relación con `Mensaje` no es una foreign key real de base de datos, sino un 
 | `Mensajes` | `Mensaje` | No (externa) | Datos importados por `get-Mail.ps1` |
 | `TipoActuaciones` | `TipoActuacion` | Sí | Catálogo de tipos de actuación |
 | `Actuaciones` | `Actuacion` | Sí | Registro de actuaciones |
+| `AccionesAuto` | `AccionesAuto` | Sí | Configuración de acciones automáticas |
+| `AccAutoFields` | `AccAutoFields` | Sí | Condiciones de campo para acciones automáticas |
