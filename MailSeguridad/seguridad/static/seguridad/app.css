@@ -576,11 +576,14 @@ label.dragging { opacity: 0.4; }
 }
 
 /* ── Row compact (single-line rows) ─────────────── */
-.data-table.row-compact tbody td {
+.data-table.row-compact tbody td .compact-wrap {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 0;
+  max-width: 100%;
+}
+.data-table.row-compact tbody td {
   height: 1.5rem;
   padding-top: 0.1rem;
   padding-bottom: 0.1rem;

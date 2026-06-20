@@ -428,9 +428,27 @@
       if (state) {
         table.classList.add('row-compact');
         btn.textContent = '⬆ Expandir';
+        // Wrap td contents in .compact-wrap divs
+        var cells = table.querySelectorAll('tbody td');
+        for (var i = 0; i < cells.length; i++) {
+          var td = cells[i];
+          if (td.querySelector('.compact-wrap')) continue;
+          var wrap = document.createElement('div');
+          wrap.className = 'compact-wrap';
+          while (td.firstChild) wrap.appendChild(td.firstChild);
+          td.appendChild(wrap);
+        }
       } else {
         table.classList.remove('row-compact');
         btn.textContent = '⬇ Compactar';
+        // Unwrap .compact-wrap divs
+        var wraps = table.querySelectorAll('.compact-wrap');
+        for (var i = 0; i < wraps.length; i++) {
+          var wrap = wraps[i];
+          var parent = wrap.parentNode;
+          while (wrap.firstChild) parent.insertBefore(wrap.firstChild, wrap);
+          parent.removeChild(wrap);
+        }
       }
     }
 
