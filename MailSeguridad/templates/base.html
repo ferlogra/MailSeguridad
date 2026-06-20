@@ -442,20 +442,41 @@
           td.style.setProperty('padding-bottom', '0.1rem', 'important');
           td.style.setProperty('white-space', 'nowrap', 'important');
           td.style.setProperty('text-overflow', 'ellipsis', 'important');
+          // Force all descendants to single-line with hidden overflow
+          var all = td.querySelectorAll('*');
+          for (var j = 0; j < all.length; j++) {
+            all[j].style.setProperty('max-height', '1.6rem', 'important');
+            all[j].style.setProperty('overflow', 'hidden', 'important');
+            all[j].style.setProperty('white-space', 'nowrap', 'important');
+            all[j].style.setProperty('text-overflow', 'ellipsis', 'important');
+            all[j].style.setProperty('padding-top', '0', 'important');
+            all[j].style.setProperty('padding-bottom', '0', 'important');
+          }
         }
       } else {
         btn.textContent = '⬇ Compactar';
         table.style.tableLayout = '';
         for (var i = 0; i < cells.length; i++) {
-          cells[i].style.width = '';
-          cells[i].style.maxWidth = '';
-          cells[i].style.height = '';
-          cells[i].style.overflow = '';
-          cells[i].style.verticalAlign = '';
-          cells[i].style.paddingTop = '';
-          cells[i].style.paddingBottom = '';
-          cells[i].style.whiteSpace = '';
-          cells[i].style.textOverflow = '';
+          var td = cells[i];
+          td.style.width = '';
+          td.style.maxWidth = '';
+          td.style.height = '';
+          td.style.overflow = '';
+          td.style.verticalAlign = '';
+          td.style.paddingTop = '';
+          td.style.paddingBottom = '';
+          td.style.whiteSpace = '';
+          td.style.textOverflow = '';
+          // Restore all descendants
+          var all = td.querySelectorAll('*');
+          for (var j = 0; j < all.length; j++) {
+            all[j].style.maxHeight = '';
+            all[j].style.overflow = '';
+            all[j].style.whiteSpace = '';
+            all[j].style.textOverflow = '';
+            all[j].style.paddingTop = '';
+            all[j].style.paddingBottom = '';
+          }
         }
       }
     }
