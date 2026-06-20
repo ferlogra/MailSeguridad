@@ -297,6 +297,28 @@ El script PowerShell `get-Mail.ps1` (`C:\ps1\get-Mail.ps1`) es el componente de 
 
 | Tag | Fecha | Cambios |
 |-----|-------|---------|
+| v1.18.0 | 2026-06-20 | Limpieza de duplicados por headers + botón Compactar filas |
+| v1.17.2 | 2026-06-18 | Modal dropdown con nombres de campo en AccAutoFields |
+| v1.17.1 | 2026-06-18 | Fix import AccionesAuto en views |
+| v1.17.0 | 2026-06-18 | CRUD AccionesAuto con inline AccAutoFields (1:N) |
+| v1.16.0 | 2026-06-18 | Campo body renderizado al final a 2 columnas + refactor búsquedas |
+| v1.15.2 | 2026-06-17 | Sesión documentada: refactors y mejoras UI |
+| v1.15.1 | 2026-06-17 | Fix varios de UI/UX |
+| v1.15.0 | 2026-06-17 | Mejoras en interfaz de tabla y búsqueda |
+| v1.14.2 | 2026-06-17 | Fix paginación y filtros |
+| v1.14.1 | 2026-06-17 | Fix ordenación multicolumna |
+| v1.14.0 | 2026-06-17 | Ordenación multicolumna con Ctrl+click |
+| v1.12.0 | 2026-06-17 | Configuraciones de tabla guardables por usuario |
+| v1.11.1 | 2026-06-17 | Fix ancho de columnas redimensionables |
+| v1.11.0 | 2026-06-17 | Columnas redimensionables con drag handle |
+| v1.10.3 | 2026-06-17 | Fix selector de columnas |
+| v1.10.2 | 2026-06-17 | Fix visibilidad de columnas |
+| v1.10.1 | 2026-06-17 | Mejoras en col-selector drag & drop |
+| v1.10.0 | 2026-06-16 | Columnas visibles configurables + drag reorder |
+| v1.9.0 | 2026-06-16 | Vista detalle de mensaje con grid |
+| v1.8.0 | 2026-06-16 | Paginación y búsqueda en listados |
+| v1.7.0 | 2026-06-16 | Panel de administración + docs |
+| v1.6.0 | 2026-06-16 | Dashboard con estadísticas |
 | v1.5.2 | 2026-06-16 | Registro de modelos en admin de Django |
 | v1.5.1 | 2026-06-16 | Botón editar actuación en modal (✏️) |
 | v1.5.0 | 2026-06-16 | Búsqueda avanzada + cambio de contraseña |

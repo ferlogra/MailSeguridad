@@ -667,6 +667,38 @@ def clear_mensajes_view(request: HttpRequest) -> HttpResponse:
     return redirect("menu")
 
 
+@login_required
+@require_http_methods(["POST"])
+def clean_duplicate_headers_view(request: HttpRequest) -> HttpResponse:
+    """Elimina duplicados por InternetMessageHeaders, conservando el de menor ID. Admin only."""
+    user = cast(Any, request).user
+    is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    if not is_admin:
+        raise PermissionDenied("Solo los administradores pueden limpiar duplicados.")
+
+    from django.db import connection
+
+    sql = """
+    DELETE FROM Mensajes
+    WHERE InternetMessageHeaders IS NOT NULL
+      AND InternetMessageHeaders != ''
+      AND id NOT IN (
+        SELECT MIN(id)
+        FROM Mensajes
+        WHERE InternetMessageHeaders IS NOT NULL
+          AND InternetMessageHeaders != ''
+        GROUP BY InternetMessageHeaders
+      );
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        messages.success(
+            request,
+            f"Eliminados {cursor.rowcount} registros duplicados por headers.",
+        )
+    return redirect("menu")
+
+
 # ── Tipo Actuaciones ─────────────────────────────────────────────
 
 

@@ -27,6 +27,7 @@ urlpatterns = [
     path("config-tabla/", include("seguridad.urls_table_config")),
     path("menu/", views.menu_view, name="menu"),
     path("mensajes/borrar-todos/", views.clear_mensajes_view, name="clear_mensajes"),
+    path("mensajes/limpiar-duplicados/", views.clean_duplicate_headers_view, name="clean_duplicate_headers"),
     path("", views.home_view, name="home"),
     path("__health__/", views.health_view, name="health"),
     path("docs/", views.docs_view, name="docs"),

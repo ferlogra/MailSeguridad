@@ -86,6 +86,10 @@
     {% csrf_token %}
     <button type="submit" class="btn btn-danger">🗑️ Borrar todos los mensajes</button>
   </form>
+  <form method="post" action="{% url 'clean_duplicate_headers' %}" onsubmit="return confirm('¿Eliminar mensajes duplicados por headers? Se conservará el de menor ID.');" style="margin-top:0.5rem;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-warning">🧹 Limpiar duplicados por headers</button>
+  </form>
 </div>
 {% endif %}
 {% endblock %}

@@ -418,6 +418,8 @@ td .urls-cell { white-space: pre-line; font-size: 0.75rem; max-width: 200px; ove
 .btn-secondary:hover { background: #475569; }
 .btn-danger { background: var(--color-error); color: #fff; }
 .btn-danger:hover { background: #dc2626; }
+.btn-warning { background: #d97706; color: #fff; }
+.btn-warning:hover { background: #b45309; }
 
 /* ── Help text ──────────────────────────────────── */
 .helptext {
@@ -571,6 +573,18 @@ label.dragging { opacity: 0.4; }
 .data-table th.col-hidden,
 .data-table td.col-hidden {
   display: none;
+}
+
+/* ── Row compact (single-line rows) ─────────────── */
+.data-table.row-compact tbody td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+  height: 1.5rem;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+  vertical-align: middle;
 }
 
 /* ── Column resize handles ──────────────────────── */

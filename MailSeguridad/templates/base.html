@@ -415,15 +415,46 @@
     });
   }
 
+  // ── Row compact toggle ─────────────────────────────
+  function initRowCompact() {
+    var btn = document.getElementById('compact-btn');
+    if (!btn) return;
+    var table = document.querySelector('.data-table');
+    if (!table) return;
+    var cs = document.querySelector('.col-selector');
+    var key = 'mailseg_compact_' + (cs ? cs.dataset.storageKey || 'default' : 'default');
+
+    function apply(state) {
+      if (state) {
+        table.classList.add('row-compact');
+        btn.textContent = '⬆ Expandir';
+      } else {
+        table.classList.remove('row-compact');
+        btn.textContent = '⬇ Compactar';
+      }
+    }
+
+    // Load saved state
+    try { apply(JSON.parse(sessionStorage.getItem(key))); } catch (_) {}
+
+    btn.addEventListener('click', function() {
+      var state = !table.classList.contains('row-compact');
+      apply(state);
+      try { sessionStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
+    });
+  }
+
   // Init on DOMContentLoaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       initColSelectors();
       initColResize();
+      initRowCompact();
     });
   } else {
     initColSelectors();
     initColResize();
+    initRowCompact();
   }
 
   // ── Actuaciones modal ──────────────────────────
