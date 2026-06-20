@@ -1,6 +1,6 @@
 # MailSeguridad
 
-**Versión:** 1.5.2  
+**Versión:** 1.19.0  
 **Stack:** Django 5.1 · Python 3 · SQLite  
 **Repositorio:** [github.com/ferlogra/MailSeguridad](https://github.com/ferlogra/MailSeguridad)
 
@@ -297,6 +297,8 @@ El script PowerShell `get-Mail.ps1` (`C:\ps1\get-Mail.ps1`) es el componente de 
 
 | Tag | Fecha | Cambios |
 |-----|-------|---------|
+| v1.19.0 | 2026-06-21 | Compactar filas: preserva ancho de columnas + get-Mail.ps1 v2.0 (-noGroup) |
+| v1.18.1 | 2026-06-21 | Compactar filas: altura fija mediante table-layout:fixed |
 | v1.18.0 | 2026-06-20 | Limpieza de duplicados por headers + botón Compactar filas |
 | v1.17.2 | 2026-06-18 | Modal dropdown con nombres de campo en AccAutoFields |
 | v1.17.1 | 2026-06-18 | Fix import AccionesAuto en views |
