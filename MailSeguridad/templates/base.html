@@ -421,33 +421,41 @@
     if (!btn) return;
     var table = document.querySelector('.data-table');
     if (!table) return;
+    var tbody = table.querySelector('tbody');
+    if (!tbody) return;
     var cs = document.querySelector('.col-selector');
     var key = 'mailseg_compact_' + (cs ? cs.dataset.storageKey || 'default' : 'default');
 
     function apply(state) {
+      var cells = tbody.querySelectorAll('td');
       if (state) {
-        table.classList.add('row-compact');
         btn.textContent = '⬆ Expandir';
-        // Wrap td contents in .compact-wrap divs
-        var cells = table.querySelectorAll('tbody td');
+        table.style.setProperty('table-layout', 'fixed', 'important');
         for (var i = 0; i < cells.length; i++) {
           var td = cells[i];
-          if (td.querySelector('.compact-wrap')) continue;
-          var wrap = document.createElement('div');
-          wrap.className = 'compact-wrap';
-          while (td.firstChild) wrap.appendChild(td.firstChild);
-          td.appendChild(wrap);
+          td.style.setProperty('width', '1px', 'important');
+          td.style.setProperty('max-width', td.offsetWidth + 'px', 'important');
+          td.style.setProperty('height', '1.8rem', 'important');
+          td.style.setProperty('overflow', 'hidden', 'important');
+          td.style.setProperty('vertical-align', 'middle', 'important');
+          td.style.setProperty('padding-top', '0.1rem', 'important');
+          td.style.setProperty('padding-bottom', '0.1rem', 'important');
+          td.style.setProperty('white-space', 'nowrap', 'important');
+          td.style.setProperty('text-overflow', 'ellipsis', 'important');
         }
       } else {
-        table.classList.remove('row-compact');
         btn.textContent = '⬇ Compactar';
-        // Unwrap .compact-wrap divs
-        var wraps = table.querySelectorAll('.compact-wrap');
-        for (var i = 0; i < wraps.length; i++) {
-          var wrap = wraps[i];
-          var parent = wrap.parentNode;
-          while (wrap.firstChild) parent.insertBefore(wrap.firstChild, wrap);
-          parent.removeChild(wrap);
+        table.style.tableLayout = '';
+        for (var i = 0; i < cells.length; i++) {
+          cells[i].style.width = '';
+          cells[i].style.maxWidth = '';
+          cells[i].style.height = '';
+          cells[i].style.overflow = '';
+          cells[i].style.verticalAlign = '';
+          cells[i].style.paddingTop = '';
+          cells[i].style.paddingBottom = '';
+          cells[i].style.whiteSpace = '';
+          cells[i].style.textOverflow = '';
         }
       }
     }
@@ -456,9 +464,10 @@
     try { apply(JSON.parse(sessionStorage.getItem(key))); } catch (_) {}
 
     btn.addEventListener('click', function() {
-      var state = !table.classList.contains('row-compact');
-      apply(state);
-      try { sessionStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
+      var cells = tbody.querySelectorAll('td');
+      var isCompact = cells.length > 0 && cells[0].style.height !== '';
+      apply(!isCompact);
+      try { sessionStorage.setItem(key, JSON.stringify(!isCompact)); } catch (_) {}
     });
   }
 
