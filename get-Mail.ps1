@@ -73,6 +73,12 @@ Si se indica, los mensajes se guardan en la tabla "Mensajes" de la BBDD especifi
 con los mismos campos que la salida Excel m�s el campo Revision.
 Ejemplo: C:\Datos\tickets.db
 
+.PARAMETER noGroup
+Si se indica, no agrupa los mensajes por ID principal.
+Cada mensaje se escribe como una fila independiente en la salida,
+en lugar de agruparlos por hilo/ticket.
+�til para depuraci�n o an�lisis detallado mensaje a mensaje.
+
 .EXAMPLE
 .\Export-OutlookTicketReport.ps1 -UserId "fernando.lopez@tirea.es" -InstallDependencies -VerboseLogging
 
@@ -156,7 +162,10 @@ param(
     [switch]$UseGraphWebLinkOnly,
 
     [Parameter()]
-    [string]$outBBDD
+    [string]$outBBDD,
+
+    [Parameter()]
+    [switch]$noGroup
 )
 
 begin {
@@ -904,7 +913,8 @@ begin {
         [CmdletBinding()]
         param(
             [Parameter(Mandatory)] [array]$Messages,
-            [string]$UserPrincipalName = ""
+            [string]$UserPrincipalName = "",
+            [switch]$NoGroup
         )
 
         $nuevo = 0
@@ -947,6 +957,69 @@ begin {
                 $item.PrimaryId = $inc
                 $item.Family = "INC"
             }
+        }
+
+        if ($NoGroup) {
+            Write-Log "NO agrupando correos (modo -noGroup): $($work.Count) mensajes individuales" "INFO"
+            $rows = foreach ($item in $work) {
+                $m = $item.Message
+                $family = $item.Family
+                $isSoarMsg = $item.IsSoar
+                $related = Get-RelatedIds -PrimaryId $item.PrimaryId -Messages @($m)
+                $state = Get-StateFromThread -PrimaryId $item.PrimaryId -Family $family -Messages @($m) -IsSoar:$isSoarMsg
+                $actionType = Get-ActionType -Messages @($m) -IsSoar:$isSoarMsg
+                $window = Get-WindowOrDate -Messages @($m)
+                $summary = $m.Subject -replace '^(RE:|RV:|FW:|FWD:)\s*', ''
+                $summary = $summary.Trim()
+
+                if ($item.PrimaryId -match "CVE\-.+") {
+                    $id = '=HYPERLINK("https://www.cve.org/CVERecord?id=' + $item.PrimaryId + '","' + $item.PrimaryId + '")'
+                } else {
+                    $id = $item.PrimaryId
+                }
+                if ($family -eq "RT") {
+                    if ($id -match '\[(.+?)\s+#(\d+)\]') {
+                        $servicio = $matches[1]
+                        $num      = [int]$matches[2]
+                    }
+                    if ($servicio -and $num) {
+                        $familia = "RT>" + $servicio
+                        $newid = "[" + $servicio + " #" + $num.ToString() + "]"
+                        $id = '=HYPERLINK("https://rt.ral.tirea.es/rt/Ticket/Display.html?id=' + $num.ToString() + '","' + $newid + '")'
+                    } else {
+                        $familia = $family
+                    }
+                } else {
+                    $familia = $family
+                }
+                [pscustomobject]@{
+                    Familia            = $familia
+                    ID_principal       = $id
+                    Grupo              = $m.Grupo
+                    Filtro             = $m.Filtro
+                    Asunto_resumen     = $summary
+                    Estado             = $state
+                    Accion_tipo        = $actionType
+                    INC_relacionado    = $related.INC
+                    CS_relacionado     = $related.CS
+                    CRQ_asociado       = $related.CRQ
+                    Ventana_o_fecha    = $window
+                    Ultimo_email_2026  = $m.ReceivedDateTime.ToString("dd/MM/yyyy HH:mm")
+                    Remitente_ultimo   = if ($m.FromName -and $m.FromName.Contains('@')) { $m.FromName } else { $m.From }
+                    Num_Mensajes       = 1
+                    MessageIds         = $m.MessageId
+                    OutlookUrls        = if ($m.OutlookUrl) { $m.OutlookUrl } else { "" }
+                    Body               = [string]$m.Body
+                    IsBodyHTML         = $m.IsBodyHTML
+                    To                 = $m.To
+                    Cc                 = $m.Cc
+                    User               = $UserPrincipalName
+                    InternetMessageId  = $m.InternetMessageId
+                    ConversationId     = $m.ConversationId
+                    InternetMessageHeaders = $m.InternetMessageHeaders
+                }
+            }
+            return $rows | Sort-Object { [datetime]::ParseExact($_.Ultimo_email_2026, "dd/MM/yyyy HH:mm", $null) } -Descending
         }
 
         $groupable = $work | Where-Object { $_.PrimaryId }
@@ -1644,7 +1717,7 @@ INSERT INTO Mensajes (
 	}
 
     if( $FilteredMails.Count -gt 0 ) {
-        $Rows= Build-OutputRows -Messages $FilteredMails -UserPrincipalName $user.UserPrincipalName
+        $Rows= Build-OutputRows -Messages $FilteredMails -UserPrincipalName $user.UserPrincipalName -NoGroup:$noGroup
 
         # Write-Host "Grupos encontrados: $($Rows.Count)/$($FilteredMails.Count)/$($rawMessages.Count)"
         Write-Log "Grupos encontrados: $($Rows.Count)/$($FilteredMails.Count)/$($rawMessages.Count)" "INFO"

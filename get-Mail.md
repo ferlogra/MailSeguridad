@@ -1,7 +1,7 @@
 # get-Mail.ps1
 
-**Versión actual:** 1.9  
-**Última actualización:** 2026-06-16  
+**Versión actual:** 2.0  
+**Última actualización:** 2026-06-20  
 **Requiere:** PowerShell 5.1+
 
 ---
@@ -83,6 +83,12 @@ Por defecto: `2000`. Rango válido: `1` – `50000`.
 ### `-UseGraphWebLinkOnly`
 Si se indica, solo utiliza la propiedad `webLink` devuelta por Graph para el enlace a Outlook.  
 Si no se indica, cuando `webLink` venga vacío se construye un deeplink OWA de compatibilidad.
+
+### `-noGroup` (v2.0+)
+Si se indica, NO agrupa los mensajes por ID principal.  
+Cada mensaje se escribe como una fila independiente en la salida (Excel y SQLite),  
+en lugar de agruparlos por hilo/ticket.  
+Útil para depuración o análisis detallado mensaje a mensaje.
 
 ### `-outBBDD` (v1.5+)
 Ruta a la base de datos SQLite donde exportar los mensajes filtrados.  
@@ -200,6 +206,13 @@ Los filtros están definidos en el array `$Filters` dentro del script. Cada filt
 ---
 
 ## Changelog
+
+### v2.0 (2026-06-20)
+**Aportaciones:**
+
+- ✨ Nuevo parámetro `-noGroup`: cuando se indica, los mensajes NO se agrupan por ID principal. Cada mensaje se escribe como una fila independiente en la salida (Excel y SQLite), conservando todos los campos individuales. Ideal para depuración o análisis detalle.
+
+---
 
 ### v2.1 (2026-06-16)
 **Aportaciones:**
