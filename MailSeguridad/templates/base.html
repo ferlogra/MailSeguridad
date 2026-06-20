@@ -428,13 +428,18 @@
 
     function apply(state) {
       var cells = tbody.querySelectorAll('td');
+      var headers = table.querySelectorAll('thead th');
       if (state) {
         btn.textContent = '⬆ Expandir';
+        // Ensure all th have explicit widths matching current visual state
+        for (var h = 0; h < headers.length; h++) {
+          if (!headers[h].style.width || headers[h].style.width === '') {
+            headers[h].style.width = headers[h].offsetWidth + 'px';
+          }
+        }
         table.style.setProperty('table-layout', 'fixed', 'important');
         for (var i = 0; i < cells.length; i++) {
           var td = cells[i];
-          td.style.setProperty('width', '1px', 'important');
-          td.style.setProperty('max-width', td.offsetWidth + 'px', 'important');
           td.style.setProperty('height', '1.8rem', 'important');
           td.style.setProperty('overflow', 'hidden', 'important');
           td.style.setProperty('vertical-align', 'middle', 'important');
@@ -455,11 +460,9 @@
         }
       } else {
         btn.textContent = '⬇ Compactar';
-        table.style.tableLayout = '';
+        // Keep table-layout:fixed + explicit th widths so columns don't shift
         for (var i = 0; i < cells.length; i++) {
           var td = cells[i];
-          td.style.width = '';
-          td.style.maxWidth = '';
           td.style.height = '';
           td.style.overflow = '';
           td.style.verticalAlign = '';
