@@ -27,7 +27,7 @@ from .forms import (
     SignupForm,
     VerificationForm,
 )
-from .models import AccAutoFields, AccionesAuto, Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
+from .models import AccAutoFields, AccionesAuto, Actuacion, ActuacionMensaje, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
 
 from .table_manager import (
     _parse_sort,
@@ -877,7 +877,7 @@ def actuacion_create_view(request: HttpRequest) -> HttpResponse:
 @login_required
 def actuaciones_por_mensaje_api(request: HttpRequest, mensaje_id: str) -> JsonResponse:
     """Return JSON list of actuaciones for a mensaje."""
-    qs = Actuacion.objects.filter(mensaje=mensaje_id).select_related("id_tipo_actuacion", "id_user").order_by("-fecha_hora")
+    qs = Actuacion.objects.filter(aplicaciones__mensaje=mensaje_id).select_related("id_tipo_actuacion", "id_user").order_by("-fecha_hora")
     data = [
         {
             "id_actuacion": a.id_actuacion,
@@ -892,6 +892,27 @@ def actuaciones_por_mensaje_api(request: HttpRequest, mensaje_id: str) -> JsonRe
         for a in qs
     ]
     return JsonResponse({"actuaciones": data})
+
+
+@login_required
+def actuaciones_recientes_api(request: HttpRequest, mensaje_id: str) -> JsonResponse:
+    """Return distinct recent actuaciones that are NOT yet applied to this message."""
+    aplicadas = ActuacionMensaje.objects.filter(mensaje=mensaje_id).values_list('actuacion_id', flat=True)
+    qs = Actuacion.objects.exclude(id_actuacion__in=list(aplicadas)).select_related("id_tipo_actuacion").order_by("-fecha_hora")
+    seen = {}
+    for a in qs:
+        key = (a.id_tipo_actuacion_id, a.breve, a.amplio, a.cierra)
+        if key not in seen:
+            seen[key] = {
+                "id_actuacion": a.id_actuacion,
+                "id_tipo_actuacion": a.id_tipo_actuacion_id,
+                "tipo_breve": a.id_tipo_actuacion.breve if a.id_tipo_actuacion else "",
+                "fecha_hora": a.fecha_hora.isoformat() if a.fecha_hora else None,
+                "breve": a.breve,
+                "amplio": a.amplio,
+                "cierra": a.cierra,
+            }
+    return JsonResponse({"actuaciones": list(seen.values())[:15]})
 
 
 @login_required
@@ -914,10 +935,24 @@ def actuacion_create_api(request: HttpRequest) -> JsonResponse:
         breve=body.get("breve", "").strip(),
         amplio=body.get("amplio", "").strip(),
         cierra=body.get("cierra", False),
-        mensaje=body.get("mensaje"),
     )
     obj.save()
+    mensaje_id = body.get("mensaje")
+    if mensaje_id:
+        ActuacionMensaje.objects.create(actuacion=obj, mensaje=mensaje_id, fecha_hora=obj.fecha_hora)
     return JsonResponse({"status": "ok", "id": obj.pk})
+
+
+@login_required
+@require_http_methods(["POST"])
+def actuacion_aplicar_api(request: HttpRequest, pk: int, mensaje_id: str) -> JsonResponse:
+    """Apply an existing actuacion to another message without duplicating it."""
+    actuacion = get_object_or_404(Actuacion, pk=pk)
+    if ActuacionMensaje.objects.filter(actuacion=actuacion, mensaje=mensaje_id).exists():
+        return JsonResponse({"status": "already_exists"})
+    from django.utils import timezone as tz
+    ActuacionMensaje.objects.create(actuacion=actuacion, mensaje=mensaje_id, fecha_hora=tz.now())
+    return JsonResponse({"status": "ok"})
 
 
 @login_required
@@ -1100,7 +1135,8 @@ def actuaciones_tickets_view(request: HttpRequest) -> HttpResponse:
                a.Cierra AS act_cierra,
                u.username AS act_user
         FROM Mensajes m
-        LEFT JOIN Actuaciones a ON m.InternetMessageId = a.Mensaje
+        LEFT JOIN ActuacionesMensajes am ON m.InternetMessageId = am.Mensaje
+        LEFT JOIN Actuaciones a ON am.IdActuacion = a.IdActuacion
         LEFT JOIN TipoActuaciones t ON a.IdTipoActuacion = t.IdTipoActuacion
         LEFT JOIN seguridad_user u ON a.IdUser = u.id
         WHERE 1=1

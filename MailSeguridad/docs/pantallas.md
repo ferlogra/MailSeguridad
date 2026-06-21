@@ -100,9 +100,15 @@ Si el usuario ya existe (username o email duplicados), se muestra el error en el
 - Accesible desde el botón "Act." de cada fila en las pantallas de Mensajes y Act. Tickets.
 - Modal JavaScript que carga las actuaciones vía `actuaciones_por_mensaje_api` (GET).
 - Listado de actuaciones existentes con: tipo, fecha, breve, amplio, cierra, usuario.
-- Botón **Nueva actuación**: formulario dentro del modal para crear (vía `actuacion_create_api`).
+- Botón **Nueva actuación**: formulario dentro del modal para crear (vía `actuacion_create_api`). Al crear, se vincula automáticamente al mensaje actual mediante la tabla `ActuacionMensaje`.
 - Botón **Editar** en cada actuación: formulario para modificar (vía `actuacion_update_api`).
 - Botón **Eliminar** en cada actuación: confirmación y borrado (vía `actuacion_delete_api`).
+
+### Reusar actuaciones de otros mensajes
+
+- Al abrir el modal, se cargan las últimas 15 actuaciones **distintas** (mismo tipo+breve+amplio+cierra) que NO estén ya aplicadas al mensaje actual, vía `actuaciones_recientes_api`.
+- Cada actuación reusable tiene un botón **"Aplicar"** que, al hacer clic, crea un registro en `ActuacionMensaje` vinculando la actuación existente con el mensaje actual (vía `actuacion_aplicar_api`). **No se duplica la actuación**, solo se crea el vínculo.
+- Si la actuación ya está aplicada a ese mensaje, muestra "Ya aplicada" en lugar del botón.
 
 ## Actuaciones (página CRUD)
 

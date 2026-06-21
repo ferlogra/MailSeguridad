@@ -184,11 +184,6 @@ class Actuacion(models.Model):
         max_length=8192, blank=True, default="", db_column="Amplio", verbose_name="Amplio"
     )
     cierra = models.BooleanField(default=False, db_column="Cierra", verbose_name="Cierra")
-    mensaje = models.TextField(
-        null=True, blank=True,
-        db_column="Mensaje",
-        verbose_name="ID del mensaje (InternetMessageId)",
-    )
 
     class Meta:
         managed = True
@@ -199,6 +194,33 @@ class Actuacion(models.Model):
 
     def __str__(self) -> str:
         return f"{self.fecha_hora:%d/%m/%Y %H:%M} — {self.breve[:60]}"
+
+
+class ActuacionMensaje(models.Model):
+    """Relación N:N entre Actuaciones y Mensajes (vía InternetMessageId)."""
+
+    id_actuacion_mensaje = models.AutoField(primary_key=True, db_column="IdActuacionMensaje")
+    actuacion = models.ForeignKey(
+        Actuacion, on_delete=models.CASCADE, db_column="IdActuacion",
+        related_name="aplicaciones"
+    )
+    mensaje = models.TextField(
+        db_column="Mensaje", verbose_name="Mensaje (InternetMessageId)"
+    )
+    fecha_hora = models.DateTimeField(
+        default=timezone.now, db_column="FechaAplicacion",
+        verbose_name="Fecha de aplicación",
+    )
+
+    class Meta:
+        managed = True
+        db_table = "ActuacionesMensajes"
+        verbose_name = "Aplicación de actuación"
+        verbose_name_plural = "Aplicaciones de actuaciones"
+        ordering = ["-fecha_hora"]
+
+    def __str__(self) -> str:
+        return f"Act #{self.actuacion_id} → {self.mensaje[:50]}"
 
 
 # ── Acciones automáticas ────────────────────────────────────────

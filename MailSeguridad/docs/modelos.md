@@ -131,11 +131,26 @@ Registro de actuaciones realizadas sobre mensajes. Tabla gestionada: `Actuacione
 | `Breve` | `breve` | `varchar(256)` | Descripción breve |
 | `Amplio` | `amplio` | `text(8192)` | Descripción amplia (opcional) |
 | `Cierra` | `cierra` | `bool` | Indica si cierra el ticket |
-| `Mensaje` | `mensaje` | `text` (nullable) | ID del mensaje asociado (InternetMessageId) |
+*(el campo `Mensaje` fue eliminado en v2.0.0 — ahora la relación es N:N vía `ActuacionMensaje`, ver sección correspondiente)*
 
-La relación con `Mensaje` no es una foreign key real de base de datos, sino un vínculo **textual** mediante el campo `InternetMessageId`. La vista `actuaciones_tickets_view` realiza un `LEFT JOIN` entre `Mensajes.InternetMessageId` y `Actuaciones.Mensaje`.
+La relación con `Mensaje` se realiza mediante la tabla intermedia `ActuacionesMensajes` (modelo `ActuacionMensaje`), que vincula cada actuación con uno o varios mensajes a través de su `InternetMessageId`. La vista `actuaciones_tickets_view` realiza un `LEFT JOIN` entre `Mensajes.InternetMessageId` y `ActuacionesMensajes.Mensaje`.
 
 ---
+
+## ActuacionMensaje *(nuevo en v2.0.0)*
+
+Tabla intermedia que relaciona `Actuacion` con `Mensaje` en una relación **N:N** (many-to-many). Cada registro vincula una actuación con un mensaje (identificado por su `InternetMessageId`), permitiendo que una misma actuación se aplique a varios mensajes sin duplicarla. Tabla gestionada: `ActuacionesMensajes`.
+
+| Columna SQL | Campo Python | Tipo | Descripción |
+|------------|--------------|------|-------------|
+| `IdActuacionMensaje` | `id_actuacion_mensaje` | `AutoField` (PK) | Identificador único |
+| `IdActuacion` | `actuacion` | `integer` (FK) | Relación con `Actuaciones.IdActuacion` (on_delete=CASCADE) |
+| `Mensaje` | `mensaje` | `text` | InternetMessageId del mensaje asociado |
+| `FechaAplicacion` | `fecha_hora` | `datetime` | Fecha y hora en que se aplicó la actuación a este mensaje |
+
+El campo `ActuacionMensaje.actuacion` tiene un `related_name="aplicaciones"`, de modo que se accede desde una instancia de `Actuacion` como `actuacion.aplicaciones.all()`.
+
+Ordenación por defecto: `-fecha_hora`.
 
 ---
 
@@ -196,5 +211,6 @@ Ordenación por defecto: `IDAccAuto`, `Orden`.
 | `Mensajes` | `Mensaje` | No (externa) | Datos importados por `get-Mail.ps1` |
 | `TipoActuaciones` | `TipoActuacion` | Sí | Catálogo de tipos de actuación |
 | `Actuaciones` | `Actuacion` | Sí | Registro de actuaciones |
+| `ActuacionesMensajes` | `ActuacionMensaje` | Sí | Relación N:N entre actuaciones y mensajes |
 | `AccionesAuto` | `AccionesAuto` | Sí | Configuración de acciones automáticas |
 | `AccAutoFields` | `AccAutoFields` | Sí | Condiciones de campo para acciones automáticas |

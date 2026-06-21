@@ -167,12 +167,26 @@ Todas las vistas están definidas en `seguridad/views.py`. Salvo `home_view` y `
 ### `actuaciones_por_mensaje_api`
 - **Ruta**: `/actuaciones/api/por-mensaje/<str:mensaje_id>/`
 - GET. Devuelve JSON con todas las actuaciones asociadas a un `InternetMessageId`.
+- La relación se obtiene mediante `LEFT JOIN` a través de la tabla intermedia `ActuacionesMensajes` (modelo `ActuacionMensaje`), filtrando por `ActuacionMensaje.mensaje = mensaje_id`.
 - Cada registro: `{ id_actuacion, id_tipo_actuacion, tipo_breve, fecha_hora, breve, amplio, cierra, username }`.
+
+### `actuaciones_recientes_api` *(nuevo en v2.0.0)*
+- **Ruta**: `/actuaciones/api/recientes/<str:mensaje_id>/`
+- GET. Devuelve JSON con las últimas 15 actuaciones **distintas** (mismo tipo+breve+amplio+cierra) que NO estén ya aplicadas al mensaje indicado.
+- Útil para el modal de reutilización de actuaciones.
 
 ### `actuacion_create_api`
 - **Ruta**: `/actuaciones/api/crear/`
-- POST (JSON). Crea una actuación. Campos: `id_tipo_actuacion`, `breve`, `amplio`, `cierra`, `mensaje`.
+- POST (JSON). Crea una actuación. Campos: `id_tipo_actuacion`, `breve`, `amplio`, `cierra`, `mensaje` (opcional: si se envía, crea automáticamente el registro en `ActuacionMensaje`).
+- Ya no guarda `mensaje` directamente en `Actuacion` (el campo fue eliminado). En su lugar, si se proporciona `mensaje`, crea un registro en la tabla intermedia `ActuacionesMensajes`.
 - Devuelve `{ status, id }`.
+
+### `actuacion_aplicar_api` *(nuevo en v2.0.0)*
+- **Ruta**: `/actuaciones/api/aplicar/<int:pk>/<str:mensaje_id>/`
+- POST. Aplica una actuación existente (identificada por `pk`) a otro mensaje sin duplicarla.
+- Crea un registro en `ActuacionMensaje` con `actuacion_id=pk` y `mensaje=mensaje_id`.
+- Si el vínculo ya existe, devuelve `{ status: "already_exists" }`.
+- Devuelve `{ status: "ok" }` en caso de éxito.
 
 ### `actuacion_update_api`
 - **Ruta**: `/actuaciones/api/<int:pk>/actualizar/`

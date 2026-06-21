@@ -525,8 +525,16 @@
     var currentMensajeId = null;
     var currentMensajeInternetId = null;
     var tiposCache = null;
+    var reusarSection = document.getElementById('act-reusar-section');
+    var reusarLoading = document.getElementById('act-reusar-loading');
+    var reusarEmpty = document.getElementById('act-reusar-empty');
+    var reusarList = document.getElementById('act-reusar-list');
 
-    function closeModal() { modal.style.display = 'none'; currentMensajeId = null; currentMensajeInternetId = null; tiposCache = null; }
+    function closeModal() {
+      modal.style.display = 'none';
+      currentMensajeId = null; currentMensajeInternetId = null; tiposCache = null;
+      if (reusarSection) reusarSection.style.display = 'none';
+    }
     closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
@@ -538,6 +546,7 @@
       currentMensajeInternetId = btn.dataset.mensajeInternetId;
       mensajeLabel.textContent = btn.dataset.mensajeLabel || '#' + currentMensajeId;
       loadActuaciones(currentMensajeInternetId);
+      loadReusarActuaciones(currentMensajeInternetId);
       modal.style.display = 'flex';
     });
 
@@ -577,6 +586,57 @@
         })
         .catch(function(err) { loading.style.display = 'none'; msg.textContent = 'Error: ' + err; });
     }
+
+    function loadReusarActuaciones(mensajeId) {
+      if (!reusarSection || !mensajeId) return;
+      reusarSection.style.display = 'block';
+      reusarLoading.style.display = 'block';
+      reusarEmpty.style.display = 'none';
+      reusarList.innerHTML = '';
+      fetch('/actuaciones/api/recientes/' + encodeURIComponent(mensajeId) + '/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          reusarLoading.style.display = 'none';
+          var list = data.actuaciones || [];
+          if (list.length === 0) { reusarEmpty.style.display = 'block'; return; }
+          var html = '';
+          list.forEach(function(a) {
+            var d = a.fecha_hora ? new Date(a.fecha_hora).toLocaleString('es') : '';
+            html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--color-border);font-size:0.8rem;">' +
+              '<span style="min-width:80px;font-size:0.7rem;color:var(--color-text-dim);">' + (a.tipo_breve || '—') + '</span>' +
+              '<span style="min-width:120px;font-size:0.65rem;color:var(--color-text-dim);">' + d + '</span>' +
+              '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (a.breve || '') + '</span>' +
+              '<span style="width:20px;text-align:center;">' + (a.cierra ? '\u2705' : '') + '</span>' +
+              '<button class="btn btn-primary act-reusar-btn" data-id-actuacion="' + a.id_actuacion + '" style="font-size:0.7rem;padding:0.15rem 0.5rem;">Aplicar</button></div>';
+          });
+          reusarList.innerHTML = html;
+        })
+        .catch(function(err) { reusarLoading.style.display = 'none'; reusarEmpty.style.display = 'block'; });
+    }
+
+    // Reuse: apply actuacion to current message (creates ActuacionMensaje only)
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.act-reusar-btn');
+      if (!btn) return;
+      if (!currentMensajeInternetId) { msg.textContent = 'El mensaje no tiene InternetMessageId.'; return; }
+      var actId = parseInt(btn.dataset.idActuacion);
+      if (!actId) { msg.textContent = 'Error: datos de actuaci\u00F3n no v\u00E1lidos.'; return; }
+      msg.textContent = 'Aplicando...';
+      fetch('/actuaciones/api/aplicar/' + actId + '/' + encodeURIComponent(currentMensajeInternetId) + '/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCsrf()}
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.status === 'already_exists') {
+          msg.textContent = 'Ya estaba aplicada.';
+        } else {
+          msg.textContent = 'Aplicada.';
+        }
+        loadActuaciones(currentMensajeInternetId);
+      })
+      .catch(function(err) { msg.textContent = 'Error: ' + err; });
+    });
 
     selectAll.addEventListener('change', function() {
       document.querySelectorAll('.act-chk').forEach(function(cb) { cb.checked = selectAll.checked; });

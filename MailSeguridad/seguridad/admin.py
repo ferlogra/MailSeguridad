@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import AccAutoFields, AccionesAuto, Actuacion, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
+from .models import AccAutoFields, AccionesAuto, Actuacion, ActuacionMensaje, Mensaje, PasswordResetToken, TableConfig, TipoActuacion, User
 
 
 @admin.register(User)
@@ -44,13 +44,27 @@ class TipoActuacionAdmin(admin.ModelAdmin):
     ordering = ["grupo", "orden"]
 
 
+class ActuacionMensajeInline(admin.TabularInline):
+    model = ActuacionMensaje
+    extra = 1
+    fields = ["mensaje", "fecha_hora"]
+
+
 @admin.register(Actuacion)
 class ActuacionAdmin(admin.ModelAdmin):
-    list_display = ["id_actuacion", "id_tipo_actuacion", "fecha_hora", "breve", "cierra", "mensaje", "id_user"]
+    list_display = ["id_actuacion", "id_tipo_actuacion", "fecha_hora", "breve", "cierra", "id_user"]
+    inlines = [ActuacionMensajeInline]
     list_filter = ["cierra", "fecha_hora"]
     search_fields = ["breve", "amplio"]
     list_select_related = ["id_tipo_actuacion", "id_user"]
     ordering = ["-fecha_hora"]
+
+
+@admin.register(ActuacionMensaje)
+class ActuacionMensajeAdmin(admin.ModelAdmin):
+    list_display = ["id_actuacion_mensaje", "actuacion", "mensaje", "fecha_hora"]
+    list_filter = ["fecha_hora"]
+    search_fields = ["mensaje"]
 
 
 @admin.register(AccionesAuto)
