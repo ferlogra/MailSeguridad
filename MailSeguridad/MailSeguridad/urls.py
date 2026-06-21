@@ -31,6 +31,8 @@ urlpatterns = [
     path("", views.home_view, name="home"),
     path("__health__/", views.health_view, name="health"),
     path("docs/", views.docs_view, name="docs"),
+    path("mensajes-unicos/", views.mensajes_unicos_view, name="mensajes_unicos"),
+    path("mensajes-unicos/api/relacionados/<int:pk>/", views.mensajes_relacionados_api, name="mensajes_relacionados_api"),
 ]
 
 if settings.DEBUG:

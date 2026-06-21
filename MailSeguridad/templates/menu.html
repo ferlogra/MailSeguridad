@@ -30,18 +30,27 @@
       </a>
     </li>
     <li>
+      <a href="{% url 'mensajes_unicos' %}">
+        <span>🌟 Mensajes únicos</span>
+        <span class="count">{{ total_unicos }}</span>
+      </a>
+    </li>
+    <li>
       <a href="{% url 'tipoactuaciones_list' %}">
         <span>🏷️ Tipos de actuación</span>
+        <span class="count">{{ total_tipoactuaciones }}</span>
       </a>
     </li>
     <li>
       <a href="{% url 'actuaciones_list' %}">
         <span>📋 Actuaciones</span>
+        <span class="count">{{ total_actuaciones }}</span>
       </a>
     </li>
     <li>
       <a href="{% url 'accionesauto_list' %}">
         <span>⚙️ Acciones automáticas</span>
+        <span class="count">{{ total_accionesauto }}</span>
       </a>
     </li>
   </ul>

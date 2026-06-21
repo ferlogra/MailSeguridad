@@ -297,6 +297,21 @@ tables.register(TableView(
 ))
 
 tables.register(TableView(
+    menu_option="mensajes_unicos_list",
+    columns=MENSAJES_ALL_COLS,
+    sort_fields=MENSAJES_SORT_FIELDS,
+    sort_labels=MENSAJES_SORT_LABELS,
+    default_cols=[
+        "id", "id_principal", "familia", "grupo", "asunto_resumen",
+        "estado", "accion_tipo", "inc_relacionado", "cs_relacionado",
+        "crq_asociado", "num_mensajes", "ultimo_email",
+        "remitente_ultimo", "revision", "conversation_id",
+    ],
+    paginate_by=50,
+    row_action_url_name="mensaje_detail",
+))
+
+tables.register(TableView(
     menu_option="tipoactuaciones_list",
     columns=TIPO_ACTUACIONES_ALL_COLS,
     sort_fields=["id_tipo_actuacion", "grupo", "orden", "breve", "cierra"],

@@ -9,5 +9,5 @@ Bump this number on EVERY code change following semver:
 Always update this file + git commit + git tag when deploying.
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 VERSION = __version__  # alias for convenience

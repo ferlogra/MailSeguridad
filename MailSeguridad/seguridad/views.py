@@ -95,6 +95,25 @@ def health_view(request: HttpRequest) -> HttpResponse:
 @login_required
 def menu_view(request: HttpRequest) -> HttpResponse:
     total_mensajes = Mensaje.objects.count()
+    # Count unique messages using same GROUP BY logic as mensajes_unicos_view
+    from django.db import connection
+    raw_cursor = connection.connection.cursor()
+    try:
+        raw_cursor.execute("""
+            SELECT COUNT(*) FROM (
+                SELECT 1 FROM Mensajes m
+                GROUP BY CASE
+                    WHEN COALESCE(m.Id_principal,'') != '' THEN COALESCE(m.Id_principal,'')
+                    ELSE COALESCE(m.INC_relacionado,'') || '|' ||
+                         COALESCE(m.CS_relacionado,'') || '|' ||
+                         COALESCE(m.CRQ_asociado,'') || '|' ||
+                         COALESCE(m.ConversationId,'')
+                END
+            )
+        """)
+        total_unicos = raw_cursor.fetchone()[0]
+    finally:
+        raw_cursor.close()
     familias = (
         Mensaje.objects.values("familia")
         .exclude(familia__isnull=True)
@@ -111,8 +130,15 @@ def menu_view(request: HttpRequest) -> HttpResponse:
     )
     user = cast(Any, request).user
     is_admin = user.is_superuser or getattr(user, "rol", None) == User.Rol.ADMINISTRADOR
+    total_tipoactuaciones = TipoActuacion.objects.count()
+    total_actuaciones = Actuacion.objects.count()
+    total_accionesauto = AccionesAuto.objects.count()
     return render(request, "menu.html", {
         "total_mensajes": total_mensajes,
+        "total_unicos": total_unicos,
+        "total_tipoactuaciones": total_tipoactuaciones,
+        "total_actuaciones": total_actuaciones,
+        "total_accionesauto": total_accionesauto,
         "familias": familias,
         "revisiones": revisiones,
         "is_admin": is_admin,
@@ -512,6 +538,140 @@ def mensajes_list_view(request: HttpRequest) -> HttpResponse:
         "base_query_string": base_query_string,
         "page_obj": page_obj,
         "is_paginated": is_paginated,
+        **table_ctx,
+    })
+
+
+@login_required
+def mensajes_unicos_view(request: HttpRequest) -> HttpResponse:
+    """Show one message per unique combination of key fields."""
+    user = cast(Any, request).user
+
+    # ── Extract filters ──
+    search = request.GET.get("q", "").strip()
+    familia = request.GET.get("familia", "").strip()
+    grupo_val = request.GET.get("grupo", "").strip()
+    remitente_ultimo = request.GET.get("remitente_ultimo", "").strip()
+    estado = request.GET.get("estado", "").strip()
+    revision = request.GET.get("revision", "").strip()
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+
+    # ── Build subquery for unique groups ──
+    # Group by Id_principal when present; fallback to the other 4 fields when empty
+    from django.db import connection
+    raw_cursor = connection.connection.cursor()
+    try:
+        raw_cursor.execute("""
+            SELECT MIN(m.Id) as id
+            FROM Mensajes m
+            GROUP BY CASE
+                WHEN COALESCE(m.Id_principal,'') != '' THEN COALESCE(m.Id_principal,'')
+                ELSE COALESCE(m.INC_relacionado,'') || '|' ||
+                     COALESCE(m.CS_relacionado,'') || '|' ||
+                     COALESCE(m.CRQ_asociado,'') || '|' ||
+                     COALESCE(m.ConversationId,'')
+            END
+        """)
+        unique_ids = [row[0] for row in raw_cursor.fetchall()]
+    finally:
+        raw_cursor.close()
+
+    # ── Base queryset ──
+    qs = Mensaje.objects.filter(id__in=unique_ids)
+
+    # ── Full-text search (OR) ──
+    if search:
+        qs = qs.filter(
+            Q(id_principal__icontains=search)
+            | Q(asunto_resumen__icontains=search)
+            | Q(familia__icontains=search)
+            | Q(grupo__icontains=search)
+            | Q(remitente_ultimo__icontains=search)
+            | Q(estado__icontains=search)
+            | Q(revision__icontains=search)
+            | Q(to__icontains=search)
+            | Q(cc__icontains=search)
+            | Q(user__icontains=search)
+            | Q(internet_message_id__icontains=search)
+            | Q(cs_relacionado__icontains=search)
+        )
+
+    # ── Advanced filters (AND) ──
+    if familia:
+        qs = qs.filter(familia__iexact=familia)
+    if grupo_val:
+        qs = qs.filter(grupo__iexact=grupo_val)
+    if remitente_ultimo:
+        qs = qs.filter(remitente_ultimo__icontains=remitente_ultimo)
+    if estado:
+        qs = qs.filter(estado__iexact=estado)
+    if revision:
+        qs = qs.filter(revision__iexact=revision)
+    if fecha_desde:
+        qs = qs.filter(ultimo_email__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(ultimo_email__lte=fecha_hasta)
+
+    # ── Distinct values for dropdowns ──
+    familias_list = (
+        Mensaje.objects.values_list("familia", flat=True)
+        .exclude(familia__isnull=True).exclude(familia="")
+        .distinct().order_by("familia")
+    )
+    grupos_list = (
+        Mensaje.objects.values_list("grupo", flat=True)
+        .exclude(grupo__isnull=True).exclude(grupo="")
+        .distinct().order_by("grupo")
+    )
+    estados_list = (
+        Mensaje.objects.values_list("estado", flat=True)
+        .exclude(estado__isnull=True).exclude(estado="")
+        .distinct().order_by("estado")
+    )
+    revisiones_list = (
+        Mensaje.objects.values_list("revision", flat=True)
+        .exclude(revision__isnull=True).exclude(revision="")
+        .distinct().order_by("revision")
+    )
+
+    # ── Build base query string ──
+    import urllib.parse
+    params = request.GET.copy()
+    params.pop("page", None)
+    params.pop("sort", None)
+    base_query_string = params.urlencode()
+
+    # ── Table config ──
+    cfg = tables["mensajes_unicos_list"]
+    table_ctx = build_table_context(request, user, cfg, base_query_string=base_query_string)
+    sort_spec = table_ctx["sort_spec"]
+    if sort_spec:
+        order = [
+            f"-{s['field']}" if s["direction"] == "desc" else s["field"]
+            for s in sort_spec
+        ]
+        qs = qs.order_by(*order)
+    else:
+        qs = qs.order_by("-ultimo_email")
+
+    # ── Pagination ──
+    mensajes, page_obj, is_paginated = paginate_queryset(request, qs, cfg.paginate_by)
+
+    return render(request, "seguridad/mensajes_list.html", {
+        "mensajes": mensajes,
+        "page_title": "Mensajes únicos",
+        "search": search,
+        "familia": familia, "grupo": grupo_val,
+        "remitente_ultimo": remitente_ultimo,
+        "estado": estado, "revision": revision,
+        "fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta,
+        "familias": familias_list, "grupos": grupos_list,
+        "estados": estados_list, "revisiones": revisiones_list,
+        "base_query_string": base_query_string,
+        "page_obj": page_obj,
+        "is_paginated": is_paginated,
+        "show_relacionados": True,
         **table_ctx,
     })
 
@@ -962,6 +1122,70 @@ def actuacion_delete_api(request: HttpRequest, pk: int) -> JsonResponse:
     obj = get_object_or_404(Actuacion, pk=pk)
     obj.delete()
     return JsonResponse({"status": "ok"})
+
+
+@login_required
+def mensajes_relacionados_api(request: HttpRequest, pk: int) -> JsonResponse:
+    """Return all messages that share the same group as the given pk.
+
+    Grouping logic (must match mensajes_unicos_view):
+    - If Id_principal is set → group by Id_principal
+    - Otherwise → group by the 4-field combination (INC, CS, CRQ, ConversationId)
+    """
+    try:
+        msg = Mensaje.objects.get(pk=pk)
+    except Mensaje.DoesNotExist:
+        return JsonResponse({"error": "Not found"}, status=404)
+
+    from django.db import connection
+    raw_cursor = connection.connection.cursor()
+    try:
+        id_principal = (msg.id_principal or '').strip()
+        if id_principal:
+            # Group by Id_principal
+            raw_cursor.execute("""
+                SELECT Id FROM Mensajes
+                WHERE COALESCE(Id_principal,'') = ?
+                ORDER BY Id
+            """, [id_principal])
+        else:
+            # Fallback: group by the other 4 fields
+            raw_cursor.execute("""
+                SELECT Id FROM Mensajes
+                WHERE COALESCE(INC_relacionado,'') = COALESCE(?, '')
+                  AND COALESCE(CS_relacionado,'') = COALESCE(?, '')
+                  AND COALESCE(CRQ_asociado,'') = COALESCE(?, '')
+                  AND COALESCE(ConversationId,'') = COALESCE(?, '')
+                ORDER BY Id
+            """, [
+                msg.inc_relacionado or '',
+                msg.cs_relacionado or '',
+                msg.crq_asociado or '',
+                msg.conversation_id or '',
+            ])
+        related_ids = [row[0] for row in raw_cursor.fetchall()]
+    finally:
+        raw_cursor.close()
+
+    qs = Mensaje.objects.filter(id__in=related_ids).order_by("id")
+    data = [
+        {
+            "id": m.id,
+            "id_principal": m.id_principal,
+            "asunto_resumen": m.asunto_resumen,
+            "familia": m.familia,
+            "estado": m.estado,
+            "ultimo_email": m.ultimo_email,
+            "remitente_ultimo": m.remitente_ultimo,
+            "internet_message_id": m.internet_message_id,
+            "inc_relacionado": m.inc_relacionado,
+            "cs_relacionado": m.cs_relacionado,
+            "crq_asociado": m.crq_asociado,
+            "conversation_id": m.conversation_id,
+        }
+        for m in qs
+    ]
+    return JsonResponse({"mensajes": data, "count": len(data)})
 
 
 @login_required

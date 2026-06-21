@@ -103,6 +103,9 @@
         <th class="col-actions-header">Act.</th>
         <th class="col-actions-header">Ver</th>
         {% endif %}
+        {% if show_relacionados %}
+        <th class="col-actions-header" style="width:40px;">Grupo</th>
+        {% endif %}
         {% for col_key, col_label in ordered_cols.items %}
           <th data-col="{{ col_key }}" class="{% if col_key not in default_cols %}col-hidden{% endif %}">
             {% with si=sort_info|dictget:col_key %}
@@ -137,6 +140,11 @@
         </td>
         <td class="col-actions-header">
           <a href="{% url row_action_url_name pk=m|dict_key:'id' %}" class="btn btn-primary" style="font-size:0.75rem;padding:0.25rem 0.5rem;">🔍 Ver</a>
+        </td>
+        {% endif %}
+        {% if show_relacionados %}
+        <td class="col-actions-header">
+          <button class="btn btn-secondary btn-relacionados" data-mensaje-id="{{ m|dict_key:'id' }}" style="font-size:0.7rem;padding:0.2rem 0.4rem;">🔗</button>
         </td>
         {% endif %}
         {% for col_key, col_label in ordered_cols.items %}
@@ -206,6 +214,12 @@
         </tr></thead>
         <tbody id="act-tbody"></tbody>
       </table>
+      <div id="act-reusar-section" style="display:none;margin-top:1rem;border-top:1px solid var(--color-border);padding-top:0.75rem;">
+        <h3 style="font-size:0.85rem;margin:0 0 0.5rem;color:var(--color-text-dim);">Reusar actuaciones de otros mensajes</h3>
+        <div id="act-reusar-loading" style="display:none;text-align:center;padding:0.5rem;color:var(--color-text-dim);font-size:0.8rem;">Cargando...</div>
+        <div id="act-reusar-empty" style="display:none;text-align:center;padding:0.5rem;color:var(--color-text-dim);font-size:0.8rem;">No hay actuaciones de otros mensajes.</div>
+        <div id="act-reusar-list"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" id="act-btn-nueva">➕ Nueva actuación</button>
@@ -214,4 +228,95 @@
     </div>
   </div>
 </div>
+
+{% if show_relacionados %}
+<div id="rel-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width:900px;">
+    <div class="modal-header">
+      <h2>Mensajes relacionados — <span id="rel-modal-label"></span></h2>
+      <button type="button" class="modal-close" id="rel-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="rel-loading" style="text-align:center;padding:2rem;color:var(--color-text-dim);">Cargando...</div>
+      <div id="rel-empty" style="display:none;text-align:center;padding:2rem;color:var(--color-text-dim);">No hay mensajes relacionados.</div>
+      <div class="table-wrap" id="rel-table-wrap" style="display:none;">
+        <table class="data-table">
+          <thead><tr>
+            <th>Act.</th><th>ID</th><th>ID principal</th><th>Asunto</th><th>Estado</th>
+            <th>INC</th><th>CS</th><th>CRQ</th><th>ConversationId</th>
+            <th>Ver</th>
+          </tr></thead>
+          <tbody id="rel-tbody"></tbody>
+        </table>
+      </div>
+      <div id="rel-count" style="text-align:right;font-size:0.8rem;color:var(--color-text-dim);margin-top:0.5rem;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var relModal = document.getElementById('rel-modal');
+  var relClose = document.getElementById('rel-modal-close');
+  var relLoading = document.getElementById('rel-loading');
+  var relEmpty = document.getElementById('rel-empty');
+  var relTableWrap = document.getElementById('rel-table-wrap');
+  var relTbody = document.getElementById('rel-tbody');
+  var relCount = document.getElementById('rel-count');
+  var relLabel = document.getElementById('rel-modal-label');
+
+  function closeRelModal() {
+    relModal.style.display = 'none';
+  }
+  relClose.addEventListener('click', closeRelModal);
+  relModal.addEventListener('click', function(e) { if (e.target === relModal) closeRelModal(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && relModal.style.display !== 'none') closeRelModal(); });
+
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-relacionados');
+    if (!btn) return;
+    var mensajeId = btn.dataset.mensajeId;
+    if (!mensajeId) return;
+    relLabel.textContent = '#' + mensajeId;
+    relLoading.style.display = 'block';
+    relEmpty.style.display = 'none';
+    relTableWrap.style.display = 'none';
+    relTbody.innerHTML = '';
+    relCount.textContent = '';
+    relModal.style.display = 'flex';
+
+    fetch('/mensajes-unicos/api/relacionados/' + mensajeId + '/')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        relLoading.style.display = 'none';
+        var list = data.mensajes || [];
+        if (list.length === 0) {
+          relEmpty.style.display = 'block';
+          return;
+        }
+        relTableWrap.style.display = '';
+        relCount.textContent = list.length + ' mensaje(s) en el grupo';
+        list.forEach(function(m) {
+          var tr = document.createElement('tr');
+          var label = (m.id_principal || m.asunto_resumen || '').substring(0, 20) || '#' + m.id;
+          tr.innerHTML =
+            '<td><button class="btn btn-secondary btn-act" data-mensaje-id="' + m.id + '" data-mensaje-internet-id="' + (m.internet_message_id || '') + '" data-mensaje-label="' + label.replace(/"/g, '&quot;') + '" style="font-size:0.7rem;padding:0.15rem 0.4rem;">Act.</button></td>' +
+            '<td>' + m.id + '</td>' +
+            '<td>' + (m.id_principal || '') + '</td>' +
+            '<td>' + (m.asunto_resumen || '').substring(0, 40) + '</td>' +
+            '<td>' + (m.estado || '') + '</td>' +
+            '<td>' + (m.inc_relacionado || '') + '</td>' +
+            '<td>' + (m.cs_relacionado || '') + '</td>' +
+            '<td>' + (m.crq_asociado || '') + '</td>' +
+            '<td style="font-size:0.7rem;">' + ((m.conversation_id || '').substring(0, 20)) + '</td>' +
+            '<td><a href="/mensajes/' + m.id + '/" class="btn btn-primary" style="font-size:0.7rem;padding:0.15rem 0.4rem;" target="_blank">🔍</a></td>';
+          relTbody.appendChild(tr);
+        });
+      })
+      .catch(function(err) { relLoading.style.display = 'none'; relLoading.textContent = 'Error: ' + err; });
+  });
+})();
+</script>
+{% endif %}
+
 {% endblock %}
